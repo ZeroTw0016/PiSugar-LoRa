@@ -14,6 +14,7 @@
                         <div id="battery-graph-panel">
                             <h3>Batterie-Verbrauch</h3>
                             <canvas id="battery-graph" width="280" height="120"></canvas>
+                            <div id="battery-percent-label" class="battery-percent-label"></div>
                             <div id="battery-estimate"></div>
                         </div>
                         <div id="shutdown-history-panel">
@@ -37,6 +38,12 @@
         </div>
     </div>
     <script>
+                function updateBatteryPercentLabel() {
+                    if (!batteryHistory.length) return;
+                    const label = document.getElementById('battery-percent-label');
+                    const last = batteryHistory[batteryHistory.length-1];
+                    label.innerText = `Aktueller Stand: ${last.percent}%`;
+                }
         // --- Batterie-Graph und Abschalt-Historie ---
         let batteryHistory = [];
         let shutdownHistory = [];
@@ -204,7 +211,7 @@
             refreshStatus();
             loadLoraMessages();
             // Lade persistente Daten
-            fetch('/api/battery_history').then(r=>r.json()).then(hist=>{ batteryHistory = hist; updateBatteryGraph(); updateEstimate(); });
+            fetch('/api/battery_history').then(r=>r.json()).then(hist=>{ batteryHistory = hist; updateBatteryGraph(); updateEstimate(); updateBatteryPercentLabel(); });
             fetch('/api/shutdown_history').then(r=>r.json()).then(hist=>{ shutdownHistory = hist; updateShutdownHistory(); });
             setTimeout(autoRefresh, 2000);
         }

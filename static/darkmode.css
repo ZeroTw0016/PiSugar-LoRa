@@ -1,3 +1,10 @@
+.battery-percent-label {
+    text-align: center;
+    font-size: 1.1em;
+    color: #7ecfff;
+    margin: 0.3em 0 0.2em 0;
+    font-weight: 500;
+}
 /* Batterie-Graph und Panels */
 #battery-graph-panel, #shutdown-history-panel {
     margin-bottom: 1em;
