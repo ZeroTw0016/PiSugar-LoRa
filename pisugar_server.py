@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, request, abort, render_template
+from lora_api import lora_api
 import smbus2
 import time
 
@@ -7,6 +8,7 @@ PISUGAR_I2C_ADDR = 0x57
 I2C_BUS = 1
 
 app = Flask(__name__)
+app.register_blueprint(lora_api)
 
 def get_bus():
     return smbus2.SMBus(I2C_BUS)
