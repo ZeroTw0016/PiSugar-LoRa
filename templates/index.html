@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PiSugar 3 WebUI</title>
+    <link rel="stylesheet" href="static/darkmode.css">
+</head>
+<body>
+    <div class="container">
+        <h1>PiSugar 3 WebUI</h1>
+        <div id="status"></div>
+        <div class="controls">
+            <button onclick="toggleWriteProtection()" id="wpBtn">Toggle Write Protection</button>
+            <button onclick="refreshStatus()">Refresh Status</button>
+        </div>
+        <div id="api-controls">
+            <!-- Weitere API-Steuerungen können hier ergänzt werden -->
+        </div>
+    </div>
+    <script>
+        async function refreshStatus() {
+            const res = await fetch('/api/status');
+            const data = await res.json();
+            let html = '<table>';
+            for (const [k, v] of Object.entries(data)) {
+                html += `<tr><td>${k}</td><td>${v}</td></tr>`;
+            }
+            html += '</table>';
+            document.getElementById('status').innerHTML = html;
+            document.getElementById('wpBtn').innerText = data.write_protection ? 'Disable Write Protection' : 'Enable Write Protection';
+        }
+        async function toggleWriteProtection() {
+            const res = await fetch('/api/write_protection', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ enabled: !(await (await fetch('/api/write_protection')).json()).write_protection })
+            });
+            refreshStatus();
+        }
+        window.onload = refreshStatus;
+    </script>
+</body>
+</html>
