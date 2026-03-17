@@ -1,34 +1,34 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PiSugar 3 WebUI</title>
-    <link rel="stylesheet" href="static/darkmode.css">
-</head>
-<body>
-    <div id="battery-banner"></div>
-    <div class="main-layout">
-        <!-- Seitenpanel: System-Infos -->
-        <div class="side-panel">
-                        <div id="battery-graph-panel">
-                            <h3>Batterie-Verbrauch</h3>
-                            <canvas id="battery-graph" width="280" height="120"></canvas>
-                            <div id="battery-percent-label" class="battery-percent-label"></div>
-                            <div id="battery-estimate"></div>
-                        </div>
-                        <div id="shutdown-history-panel">
-                            <h3>Letzte Abschaltungen</h3>
-                            <ul id="shutdown-history"></ul>
-                        </div>
+   <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+      <title>PiSugar 3 WebUI</title>
+      <link rel="stylesheet" href="static/darkmode.css">
+   </head>
+   <body>
+      <div id="battery-banner"></div>
+      <div class="main-layout">
+         <!-- Seitenpanel: System-Infos -->
+         <div class="side-panel">
+            <div id="battery-graph-panel">
+               <h3>Batterie-Verbrauch</h3>
+               <canvas id="battery-graph" width="280" height="120"></canvas>
+               <div id="battery-percent-label" class="battery-percent-label"></div>
+               <div id="battery-estimate"></div>
+            </div>
+            <div id="shutdown-history-panel">
+               <h3>Letzte Abschaltungen</h3>
+               <ul id="shutdown-history"></ul>
+            </div>
             <h2>System</h2>
             <div class="controls">
-                <button onclick="toggleWriteProtection()" id="wpBtn">Toggle Write Protection</button>
+               <button onclick="toggleWriteProtection()" id="wpBtn">Toggle Write Protection</button>
             </div>
             <div id="pisugar-controls"></div>
-        </div>
-        <!-- Hauptpanel: LoRa -->
-        <div class="main-panel">
+         </div>
+         <!-- Hauptpanel: LoRa -->
+         <div class="main-panel">
             <h2>LoRa Nachrichten</h2>
             <div id="lora-address-panel" style="margin-bottom:10px;"></div>
             <div id="lora-frequency-panel" style="margin-bottom:10px;"></div>
@@ -36,253 +36,253 @@
             <div id="lora-test-result" style="margin:10px 0;"></div>
             <div id="lora-messages"></div>
             <form id="lora-send-form" onsubmit="sendLoraMsg(event)">
-                <input type="text" id="lora-msg" placeholder="Nachricht senden...">
-                <button type="submit">Senden</button>
+               <input type="text" id="lora-msg" placeholder="Nachricht senden...">
+               <button type="submit">Senden</button>
             </form>
-                async function loadLoraFrequency() {
-                    const res = await fetch('/api/lora/frequency');
-                    const data = await res.json();
-                    let freq = data.frequency;
-                    let html = `<b>Frequenz (Empfang):</b> <span id='freq-val'>${freq} MHz</span> `;
-                    html += `<select id='freq-select'>
-                        <option value='868'>868 MHz (EU)</option>
-                        <option value='869.525'>869.525 MHz (Germany)</option>
-                    </select>`;
-                    html += `<button onclick='switchLoraFrequency()'>Wechseln</button>`;
-                    document.getElementById('lora-frequency-panel').innerHTML = html;
-                    document.getElementById('freq-select').value = freq;
-                }
-
-                async function switchLoraFrequency() {
-                    const sel = document.getElementById('freq-select');
-                    const freq = parseFloat(sel.value);
-                    const res = await fetch('/api/lora/frequency', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({frequency: freq})
-                    });
-                    const data = await res.json();
-                    if (data.frequency) {
-                        document.getElementById('freq-val').innerText = data.frequency + ' MHz';
-                    } else if (data.error) {
-                        alert('Fehler: ' + data.error);
-                    }
-                }
-        </div>
-    </div>
-    <script>
-        async function loadLoraAddress() {
-            const res = await fetch('/api/lora/address');
-            const data = await res.json();
-            document.getElementById('lora-address-panel').innerHTML = `<b>Eigene LoRa-Adresse:</b> 0x${data.address.toString(16).padStart(4,'0').toUpperCase()}`;
-        }
-        async function runLoraTest() {
-            document.getElementById('lora-test-btn').disabled = true;
-            document.getElementById('lora-test-result').innerText = 'Test läuft...';
-            const res = await fetch('/api/lora/test', {method:'POST'});
-            const data = await res.json();
-            document.getElementById('lora-test-result').innerHTML = `<b>Test gesendet:</b> ${data.test_sent}<br><b>Empfangen:</b> ${data.received || '-'}<br><b>Ergebnis:</b> <span style='color:${data.result==='OK'?'#0f0':'#f00'}'>${data.result}</span>`;
-            document.getElementById('lora-test-btn').disabled = false;
-        }
-
-                        let lastBatteryUpdate = 0;
-                        function autoRefresh() {
-                            refreshStatus();
-                            loadLoraMessages();
-                            const now = Date.now();
-                            if (now - lastBatteryUpdate > 60000 || lastBatteryUpdate === 0) {
-                                fetch('/api/battery_history').then(r=>r.json()).then(hist=>{ batteryHistory = hist; updateBatteryGraph(); updateEstimate(); updateBatteryPercentLabel(); });
-                                lastBatteryUpdate = now;
-                            }
-                            setTimeout(autoRefresh, 5000);
-                        }
-
-                        window.onload = function() {
-                            fetch('/api/shutdown_history').then(r=>r.json()).then(hist=>{ shutdownHistory = hist; updateShutdownHistory(); });
-                            loadLoraAddress();
-                            loadLoraFrequency();
-                            autoRefresh();
-                        }
-                function updateBatteryPercentLabel() {
-                    if (!batteryHistory.length) return;
-                    const label = document.getElementById('battery-percent-label');
-                    const last = batteryHistory[batteryHistory.length-1];
-                    label.innerText = `Aktueller Stand: ${last.percent}%`;
-                }
-        // --- Batterie-Graph und Abschalt-Historie ---
-        let batteryHistory = [];
-        let shutdownHistory = [];
-        let lastBatteryPercent = null;
-        let lastTimestamp = null;
-        let dischargeRates = [];
-
-        function updateBatteryGraph() {
-            const canvas = document.getElementById('battery-graph');
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0,0,canvas.width,canvas.height);
-            if (batteryHistory.length < 2) return;
-            // Achsen
-            ctx.strokeStyle = '#444';
-            ctx.beginPath(); ctx.moveTo(30,10); ctx.lineTo(30,110); ctx.lineTo(270,110); ctx.stroke();
-            // Graph
-            ctx.strokeStyle = '#7ecfff';
-            ctx.beginPath();
-            let min = 0;
-            let max = 100;
-            for (let i=0;i<batteryHistory.length;i++) {
-                let x = 30 + (240 * i/(batteryHistory.length-1));
-                let y = 110 - 100*(batteryHistory[i].percent-min)/(max-min);
-                if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-            }
-            ctx.stroke();
-        }
-
-        function updateShutdownHistory() {
-            const ul = document.getElementById('shutdown-history');
-            ul.innerHTML = shutdownHistory.slice(-5).reverse().map(t => `<li>${new Date(t).toLocaleString()}</li>`).join('');
-        }
-
-        function updateEstimate() {
-            const estDiv = document.getElementById('battery-estimate');
-            if (dischargeRates.length < 3) { estDiv.innerText = 'Schätzung nicht verfügbar.'; return; }
-            // Gleitender Mittelwert der letzten 5 Entladeraten
-            let avgRate = dischargeRates.slice(-5).reduce((a,b)=>a+b,0)/Math.min(5,dischargeRates.length);
-            let last = batteryHistory[batteryHistory.length-1];
-            let estHours = last.percent / avgRate;
-            if (estHours > 0 && isFinite(estHours)) {
-                let h = Math.floor(estHours);
-                let m = Math.round((estHours-h)*60);
-                estDiv.innerText = `Geschätzte Restlaufzeit: ${h}h ${m}min`;
-            } else {
-                estDiv.innerText = 'Schätzung nicht verfügbar.';
-            }
-        }
-            // Batterie-Verlauf und Abschalt-Logik
-            const now = Date.now();
-            if (lastBatteryPercent !== null && lastTimestamp !== null) {
-                if (data.battery_percent < lastBatteryPercent) {
-                    // Entladung: Rate merken
-                    let dt = (now-lastTimestamp)/3600000; // Stunden
-                    let dr = (lastBatteryPercent-data.battery_percent)/dt;
-                    if (dr > 0 && dr < 100) dischargeRates.push(dr);
-                }
-                if (data.battery_percent > lastBatteryPercent+5) {
-                    // Gerät wurde vermutlich geladen oder neugestartet
-                    shutdownHistory.push(now);
-                    updateShutdownHistory();
-                }
-            }
-            batteryHistory.push({percent:data.battery_percent, time:now});
-            if (batteryHistory.length > 50) batteryHistory.shift();
-            lastBatteryPercent = data.battery_percent;
-            lastTimestamp = now;
-            updateBatteryGraph();
-            updateEstimate();
-
-        async function refreshStatus() {
-            const res = await fetch('/api/status');
-            const data = await res.json();
-            // Banner oben aktualisieren
-            let banner = `<div class="battery-banner-inner">🔋 ${data.battery_percent}% &nbsp;`;
-            banner += data.external_power ? '<span style="color:#7ecfff">⚡ Angeschlossen</span>' : '<span style="color:#ffb347">🔌 Nicht eingesteckt</span>';
-            banner += '</div>';
-            document.getElementById('battery-banner').innerHTML = banner;
-            document.getElementById('wpBtn').innerText = data.write_protection ? 'Disable Write Protection' : 'Enable Write Protection';
-
-            // PiSugar Controls mit Status
-            let controls = '';
-            if (!data.write_protection) {
-                controls += `<div class='pisugar-edit-group'><b>Timing Boot:</b> <button onclick='setTimingBoot(true)' class='${data.timing_boot_enabled ? "active" : ""}'>An</button> <button onclick='setTimingBoot(false)' class='${!data.timing_boot_enabled ? "active" : ""}'>Aus</button></div>`;
-                controls += `<div class='pisugar-edit-group'><b>Auto Resume Boot:</b> <button onclick='setAutoResumeBoot(true)' class='${data.auto_resume_boot ? "active" : ""}'>An</button> <button onclick='setAutoResumeBoot(false)' class='${!data.auto_resume_boot ? "active" : ""}'>Aus</button></div>`;
-                controls += `<div class='pisugar-edit-group'><b>Soft Shutdown:</b> <button onclick='setSoftShutdown(true)' class='${data.soft_shutdown ? "active" : ""}'>An</button> <button onclick='setSoftShutdown(false)' class='${!data.soft_shutdown ? "active" : ""}'>Aus</button></div>`;
-                controls += `<div class='pisugar-edit-group'><b>Watchdog:</b> <button onclick='setWatchdog(true)' class='${data.watchdog_enabled ? "active" : ""}'>An</button> <button onclick='setWatchdog(false)' class='${!data.watchdog_enabled ? "active" : ""}'>Aus</button></div>`;
-                controls += `<div class='pisugar-edit-group'><b>Boot Watchdog:</b> <button onclick='setBootWatchdog(true)' class='${data.boot_watchdog_enabled ? "active" : ""}'>An</button> <button onclick='setBootWatchdog(false)' class='${!data.boot_watchdog_enabled ? "active" : ""}'>Aus</button></div>`;
-                controls += `<div class='pisugar-edit-group'><b>Charging Protection:</b> <button onclick='setChargingProtection(true)' class='${data.charging_protection ? "active" : ""}'>An</button> <button onclick='setChargingProtection(false)' class='${!data.charging_protection ? "active" : ""}'>Aus</button></div>`;
-                controls += `<div class='pisugar-edit-group'><b>Auto Hibernate:</b> <button onclick='setAutoHibernate(true)' class='${data.auto_hibernate ? "active" : ""}'>An</button> <button onclick='setAutoHibernate(false)' class='${!data.auto_hibernate ? "active" : ""}'>Aus</button></div>`;
-                controls += `<div class='pisugar-edit-group'><b>Anti Mistouch:</b> <button onclick='setAntiMistouch(true)' class='${data.anti_mistouch ? "active" : ""}'>An</button> <button onclick='setAntiMistouch(false)' class='${!data.anti_mistouch ? "active" : ""}'>Aus</button></div>`;
-            } else {
-                controls = `<div style='color:#888; font-size:0.95em;'>Write Protection aktiv – Einstellungen gesperrt.</div>`;
-            }
-            document.getElementById('pisugar-controls').innerHTML = controls;
-        }
-    // Style für aktive Buttons
-
-
-        // PiSugar Control-APIs
-        async function setTimingBoot(on) {
-            await fetch('/api/timing_boot', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled:on})});
-            refreshStatus();
-        }
-        async function setAutoResumeBoot(on) {
-            await fetch('/api/auto_resume_boot', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({on:on})});
-            refreshStatus();
-        }
-        async function setSoftShutdown(on) {
-            await fetch('/api/soft_shutdown', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({on:on})});
-            refreshStatus();
-        }
-        async function setWatchdog(on) {
-            await fetch('/api/watchdog', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled:on})});
-            refreshStatus();
-        }
-        async function setBootWatchdog(on) {
-            await fetch('/api/boot_watchdog', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled:on})});
-            refreshStatus();
-        }
-        async function setChargingProtection(on) {
-            await fetch('/api/charging_protection', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({on:on})});
-            refreshStatus();
-        }
-        async function setAutoHibernate(on) {
-            await fetch('/api/auto_hibernate', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({on:on})});
-            refreshStatus();
-        }
-        async function setAntiMistouch(on) {
-            await fetch('/api/anti_mistouch', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({on:on})});
-            refreshStatus();
-        }
-        async function toggleWriteProtection() {
-            const res = await fetch('/api/write_protection', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ enabled: !(await (await fetch('/api/write_protection')).json()).write_protection })
-            });
-            refreshStatus();
-        }
-        async function loadLoraMessages() {
-            const res = await fetch('/api/lora/messages');
-            const msgs = await res.json();
-            let html = '';
-            for (const m of msgs) {
-                let ts = m.timestamp ? `<span class="lora-timestamp">[${new Date(m.timestamp).toLocaleString()}]</span> ` : '';
-                html += `<div class="lora-msg ${m.type}">${ts}<b>${m.type === 'sent' ? 'Gesendet' : 'Empfangen'}:</b> <span>${m.msg}</span></div>`;
-            }
-            document.getElementById('lora-messages').innerHTML = html;
-        }
-        async function sendLoraMsg(e) {
-            e.preventDefault();
-            const msg = document.getElementById('lora-msg').value;
-            if (!msg) return;
-            await fetch('/api/lora/send', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ msg })
-            });
-            document.getElementById('lora-msg').value = '';
-            await loadLoraMessages();
-        }
-        function autoRefresh() {
-            refreshStatus();
-            loadLoraMessages();
-            // Lade persistente Daten
-            fetch('/api/battery_history').then(r=>r.json()).then(hist=>{ batteryHistory = hist; updateBatteryGraph(); updateEstimate(); updateBatteryPercentLabel(); });
-            fetch('/api/shutdown_history').then(r=>r.json()).then(hist=>{ shutdownHistory = hist; updateShutdownHistory(); });
-            setTimeout(autoRefresh, 2000);
-        }
-        window.onload = function() {
-            autoRefresh();
-        }
-    </script>
-</body>
+         </div>
+      </div>
+      <script>
+         async function loadLoraFrequency() {
+                     const res = await fetch('/api/lora/frequency');
+                     const data = await res.json();
+                     let freq = data.frequency;
+                     let html = `<b>Frequenz (Empfang):</b> <span id='freq-val'>${freq} MHz</span> `;
+                     html += `<select id='freq-select'>
+                         <option value='868'>868 MHz (EU)</option>
+                         <option value='869.525'>869.525 MHz (Germany)</option>
+                     </select>`;
+                     html += `<button onclick='switchLoraFrequency()'>Wechseln</button>`;
+                     document.getElementById('lora-frequency-panel').innerHTML = html;
+                     document.getElementById('freq-select').value = freq;
+                 }
+         
+                 async function switchLoraFrequency() {
+                     const sel = document.getElementById('freq-select');
+                     const freq = parseFloat(sel.value);
+                     const res = await fetch('/api/lora/frequency', {
+                         method: 'POST',
+                         headers: {'Content-Type': 'application/json'},
+                         body: JSON.stringify({frequency: freq})
+                     });
+                     const data = await res.json();
+                     if (data.frequency) {
+                         document.getElementById('freq-val').innerText = data.frequency + ' MHz';
+                     } else if (data.error) {
+                         alert('Fehler: ' + data.error);
+                     }
+                 }
+         async function loadLoraAddress() {
+             const res = await fetch('/api/lora/address');
+             const data = await res.json();
+             document.getElementById('lora-address-panel').innerHTML = `<b>Eigene LoRa-Adresse:</b> 0x${data.address.toString(16).padStart(4,'0').toUpperCase()}`;
+         }
+         async function runLoraTest() {
+             document.getElementById('lora-test-btn').disabled = true;
+             document.getElementById('lora-test-result').innerText = 'Test läuft...';
+             const res = await fetch('/api/lora/test', {method:'POST'});
+             const data = await res.json();
+             document.getElementById('lora-test-result').innerHTML = `<b>Test gesendet:</b> ${data.test_sent}<br><b>Empfangen:</b> ${data.received || '-'}<br><b>Ergebnis:</b> <span style='color:${data.result==='OK'?'#0f0':'#f00'}'>${data.result}</span>`;
+             document.getElementById('lora-test-btn').disabled = false;
+         }
+         
+                         let lastBatteryUpdate = 0;
+                         function autoRefresh() {
+                             refreshStatus();
+                             loadLoraMessages();
+                             const now = Date.now();
+                             if (now - lastBatteryUpdate > 60000 || lastBatteryUpdate === 0) {
+                                 fetch('/api/battery_history').then(r=>r.json()).then(hist=>{ batteryHistory = hist; updateBatteryGraph(); updateEstimate(); updateBatteryPercentLabel(); });
+                                 lastBatteryUpdate = now;
+                             }
+                             setTimeout(autoRefresh, 5000);
+                         }
+         
+                         window.onload = function() {
+                             fetch('/api/shutdown_history').then(r=>r.json()).then(hist=>{ shutdownHistory = hist; updateShutdownHistory(); });
+                             loadLoraAddress();
+                             loadLoraFrequency();
+                             autoRefresh();
+                         }
+                 function updateBatteryPercentLabel() {
+                     if (!batteryHistory.length) return;
+                     const label = document.getElementById('battery-percent-label');
+                     const last = batteryHistory[batteryHistory.length-1];
+                     label.innerText = `Aktueller Stand: ${last.percent}%`;
+                 }
+         // --- Batterie-Graph und Abschalt-Historie ---
+         let batteryHistory = [];
+         let shutdownHistory = [];
+         let lastBatteryPercent = null;
+         let lastTimestamp = null;
+         let dischargeRates = [];
+         
+         function updateBatteryGraph() {
+             const canvas = document.getElementById('battery-graph');
+             if (!canvas) return;
+             const ctx = canvas.getContext('2d');
+             ctx.clearRect(0,0,canvas.width,canvas.height);
+             if (batteryHistory.length < 2) return;
+             // Achsen
+             ctx.strokeStyle = '#444';
+             ctx.beginPath(); ctx.moveTo(30,10); ctx.lineTo(30,110); ctx.lineTo(270,110); ctx.stroke();
+             // Graph
+             ctx.strokeStyle = '#7ecfff';
+             ctx.beginPath();
+             let min = 0;
+             let max = 100;
+             for (let i=0;i<batteryHistory.length;i++) {
+                 let x = 30 + (240 * i/(batteryHistory.length-1));
+                 let y = 110 - 100*(batteryHistory[i].percent-min)/(max-min);
+                 if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+             }
+             ctx.stroke();
+         }
+         
+         function updateShutdownHistory() {
+             const ul = document.getElementById('shutdown-history');
+             ul.innerHTML = shutdownHistory.slice(-5).reverse().map(t => `<li>${new Date(t).toLocaleString()}</li>`).join('');
+         }
+         
+         function updateEstimate() {
+             const estDiv = document.getElementById('battery-estimate');
+             if (dischargeRates.length < 3) { estDiv.innerText = 'Schätzung nicht verfügbar.'; return; }
+             // Gleitender Mittelwert der letzten 5 Entladeraten
+             let avgRate = dischargeRates.slice(-5).reduce((a,b)=>a+b,0)/Math.min(5,dischargeRates.length);
+             let last = batteryHistory[batteryHistory.length-1];
+             let estHours = last.percent / avgRate;
+             if (estHours > 0 && isFinite(estHours)) {
+                 let h = Math.floor(estHours);
+                 let m = Math.round((estHours-h)*60);
+                 estDiv.innerText = `Geschätzte Restlaufzeit: ${h}h ${m}min`;
+             } else {
+                 estDiv.innerText = 'Schätzung nicht verfügbar.';
+             }
+         }
+             // Batterie-Verlauf und Abschalt-Logik
+             const now = Date.now();
+             if (lastBatteryPercent !== null && lastTimestamp !== null) {
+                 if (data.battery_percent < lastBatteryPercent) {
+                     // Entladung: Rate merken
+                     let dt = (now-lastTimestamp)/3600000; // Stunden
+                     let dr = (lastBatteryPercent-data.battery_percent)/dt;
+                     if (dr > 0 && dr < 100) dischargeRates.push(dr);
+                 }
+                 if (data.battery_percent > lastBatteryPercent+5) {
+                     // Gerät wurde vermutlich geladen oder neugestartet
+                     shutdownHistory.push(now);
+                     updateShutdownHistory();
+                 }
+             }
+             batteryHistory.push({percent:data.battery_percent, time:now});
+             if (batteryHistory.length > 50) batteryHistory.shift();
+             lastBatteryPercent = data.battery_percent;
+             lastTimestamp = now;
+             updateBatteryGraph();
+             updateEstimate();
+         
+         async function refreshStatus() {
+             const res = await fetch('/api/status');
+             const data = await res.json();
+             // Banner oben aktualisieren
+             let banner = `<div class="battery-banner-inner">🔋 ${data.battery_percent}% &nbsp;`;
+             banner += data.external_power ? '<span style="color:#7ecfff">⚡ Angeschlossen</span>' : '<span style="color:#ffb347">🔌 Nicht eingesteckt</span>';
+             banner += '</div>';
+             document.getElementById('battery-banner').innerHTML = banner;
+             document.getElementById('wpBtn').innerText = data.write_protection ? 'Disable Write Protection' : 'Enable Write Protection';
+         
+             // PiSugar Controls mit Status
+             let controls = '';
+             if (!data.write_protection) {
+                 controls += `<div class='pisugar-edit-group'><b>Timing Boot:</b> <button onclick='setTimingBoot(true)' class='${data.timing_boot_enabled ? "active" : ""}'>An</button> <button onclick='setTimingBoot(false)' class='${!data.timing_boot_enabled ? "active" : ""}'>Aus</button></div>`;
+                 controls += `<div class='pisugar-edit-group'><b>Auto Resume Boot:</b> <button onclick='setAutoResumeBoot(true)' class='${data.auto_resume_boot ? "active" : ""}'>An</button> <button onclick='setAutoResumeBoot(false)' class='${!data.auto_resume_boot ? "active" : ""}'>Aus</button></div>`;
+                 controls += `<div class='pisugar-edit-group'><b>Soft Shutdown:</b> <button onclick='setSoftShutdown(true)' class='${data.soft_shutdown ? "active" : ""}'>An</button> <button onclick='setSoftShutdown(false)' class='${!data.soft_shutdown ? "active" : ""}'>Aus</button></div>`;
+                 controls += `<div class='pisugar-edit-group'><b>Watchdog:</b> <button onclick='setWatchdog(true)' class='${data.watchdog_enabled ? "active" : ""}'>An</button> <button onclick='setWatchdog(false)' class='${!data.watchdog_enabled ? "active" : ""}'>Aus</button></div>`;
+                 controls += `<div class='pisugar-edit-group'><b>Boot Watchdog:</b> <button onclick='setBootWatchdog(true)' class='${data.boot_watchdog_enabled ? "active" : ""}'>An</button> <button onclick='setBootWatchdog(false)' class='${!data.boot_watchdog_enabled ? "active" : ""}'>Aus</button></div>`;
+                 controls += `<div class='pisugar-edit-group'><b>Charging Protection:</b> <button onclick='setChargingProtection(true)' class='${data.charging_protection ? "active" : ""}'>An</button> <button onclick='setChargingProtection(false)' class='${!data.charging_protection ? "active" : ""}'>Aus</button></div>`;
+                 controls += `<div class='pisugar-edit-group'><b>Auto Hibernate:</b> <button onclick='setAutoHibernate(true)' class='${data.auto_hibernate ? "active" : ""}'>An</button> <button onclick='setAutoHibernate(false)' class='${!data.auto_hibernate ? "active" : ""}'>Aus</button></div>`;
+                 controls += `<div class='pisugar-edit-group'><b>Anti Mistouch:</b> <button onclick='setAntiMistouch(true)' class='${data.anti_mistouch ? "active" : ""}'>An</button> <button onclick='setAntiMistouch(false)' class='${!data.anti_mistouch ? "active" : ""}'>Aus</button></div>`;
+             } else {
+                 controls = `<div style='color:#888; font-size:0.95em;'>Write Protection aktiv – Einstellungen gesperrt.</div>`;
+             }
+             document.getElementById('pisugar-controls').innerHTML = controls;
+         }
+         // Style für aktive Buttons
+         
+         
+         // PiSugar Control-APIs
+         async function setTimingBoot(on) {
+             await fetch('/api/timing_boot', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled:on})});
+             refreshStatus();
+         }
+         async function setAutoResumeBoot(on) {
+             await fetch('/api/auto_resume_boot', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({on:on})});
+             refreshStatus();
+         }
+         async function setSoftShutdown(on) {
+             await fetch('/api/soft_shutdown', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({on:on})});
+             refreshStatus();
+         }
+         async function setWatchdog(on) {
+             await fetch('/api/watchdog', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled:on})});
+             refreshStatus();
+         }
+         async function setBootWatchdog(on) {
+             await fetch('/api/boot_watchdog', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled:on})});
+             refreshStatus();
+         }
+         async function setChargingProtection(on) {
+             await fetch('/api/charging_protection', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({on:on})});
+             refreshStatus();
+         }
+         async function setAutoHibernate(on) {
+             await fetch('/api/auto_hibernate', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({on:on})});
+             refreshStatus();
+         }
+         async function setAntiMistouch(on) {
+             await fetch('/api/anti_mistouch', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({on:on})});
+             refreshStatus();
+         }
+         async function toggleWriteProtection() {
+             const res = await fetch('/api/write_protection', {
+                 method: 'POST',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify({ enabled: !(await (await fetch('/api/write_protection')).json()).write_protection })
+             });
+             refreshStatus();
+         }
+         async function loadLoraMessages() {
+             const res = await fetch('/api/lora/messages');
+             const msgs = await res.json();
+             let html = '';
+             for (const m of msgs) {
+                 let ts = m.timestamp ? `<span class="lora-timestamp">[${new Date(m.timestamp).toLocaleString()}]</span> ` : '';
+                 html += `<div class="lora-msg ${m.type}">${ts}<b>${m.type === 'sent' ? 'Gesendet' : 'Empfangen'}:</b> <span>${m.msg}</span></div>`;
+             }
+             document.getElementById('lora-messages').innerHTML = html;
+         }
+         async function sendLoraMsg(e) {
+             e.preventDefault();
+             const msg = document.getElementById('lora-msg').value;
+             if (!msg) return;
+             await fetch('/api/lora/send', {
+                 method: 'POST',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify({ msg })
+             });
+             document.getElementById('lora-msg').value = '';
+             await loadLoraMessages();
+         }
+         function autoRefresh() {
+             refreshStatus();
+             loadLoraMessages();
+             // Lade persistente Daten
+             fetch('/api/battery_history').then(r=>r.json()).then(hist=>{ batteryHistory = hist; updateBatteryGraph(); updateEstimate(); updateBatteryPercentLabel(); });
+             fetch('/api/shutdown_history').then(r=>r.json()).then(hist=>{ shutdownHistory = hist; updateShutdownHistory(); });
+             setTimeout(autoRefresh, 2000);
+         }
+         window.onload = function() {
+             autoRefresh();
+         }
+      </script>
+   </body>
 </html>
