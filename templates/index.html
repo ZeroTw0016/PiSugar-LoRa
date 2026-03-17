@@ -16,6 +16,7 @@
                 <button onclick="toggleWriteProtection()" id="wpBtn">Toggle Write Protection</button>
                 <button onclick="refreshStatus()">Refresh Status</button>
             </div>
+            <div id="pisugar-controls"></div>
         </div>
         <!-- Hauptpanel: LoRa -->
         <div class="main-panel">
@@ -37,6 +38,56 @@
             banner += '</div>';
             document.getElementById('battery-banner').innerHTML = banner;
             document.getElementById('wpBtn').innerText = data.write_protection ? 'Disable Write Protection' : 'Enable Write Protection';
+
+            // PiSugar Controls
+            let controls = '';
+            if (!data.write_protection) {
+                controls += `<div class='pisugar-edit-group'><b>Timing Boot:</b> <button onclick='setTimingBoot(true)'>An</button> <button onclick='setTimingBoot(false)'>Aus</button></div>`;
+                controls += `<div class='pisugar-edit-group'><b>Auto Resume Boot:</b> <button onclick='setAutoResumeBoot(true)'>An</button> <button onclick='setAutoResumeBoot(false)'>Aus</button></div>`;
+                controls += `<div class='pisugar-edit-group'><b>Soft Shutdown:</b> <button onclick='setSoftShutdown(true)'>An</button> <button onclick='setSoftShutdown(false)'>Aus</button></div>`;
+                controls += `<div class='pisugar-edit-group'><b>Watchdog:</b> <button onclick='setWatchdog(true)'>An</button> <button onclick='setWatchdog(false)'>Aus</button></div>`;
+                controls += `<div class='pisugar-edit-group'><b>Boot Watchdog:</b> <button onclick='setBootWatchdog(true)'>An</button> <button onclick='setBootWatchdog(false)'>Aus</button></div>`;
+                controls += `<div class='pisugar-edit-group'><b>Charging Protection:</b> <button onclick='setChargingProtection(true)'>An</button> <button onclick='setChargingProtection(false)'>Aus</button></div>`;
+                controls += `<div class='pisugar-edit-group'><b>Auto Hibernate:</b> <button onclick='setAutoHibernate(true)'>An</button> <button onclick='setAutoHibernate(false)'>Aus</button></div>`;
+                controls += `<div class='pisugar-edit-group'><b>Anti Mistouch:</b> <button onclick='setAntiMistouch(true)'>An</button> <button onclick='setAntiMistouch(false)'>Aus</button></div>`;
+            } else {
+                controls = `<div style='color:#888; font-size:0.95em;'>Write Protection aktiv – Einstellungen gesperrt.</div>`;
+            }
+            document.getElementById('pisugar-controls').innerHTML = controls;
+        }
+
+        // PiSugar Control-APIs
+        async function setTimingBoot(on) {
+            await fetch('/api/timing_boot', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled:on})});
+            refreshStatus();
+        }
+        async function setAutoResumeBoot(on) {
+            await fetch('/api/auto_resume_boot', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({on:on})});
+            refreshStatus();
+        }
+        async function setSoftShutdown(on) {
+            await fetch('/api/soft_shutdown', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({on:on})});
+            refreshStatus();
+        }
+        async function setWatchdog(on) {
+            await fetch('/api/watchdog', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled:on})});
+            refreshStatus();
+        }
+        async function setBootWatchdog(on) {
+            await fetch('/api/boot_watchdog', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled:on})});
+            refreshStatus();
+        }
+        async function setChargingProtection(on) {
+            await fetch('/api/charging_protection', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({on:on})});
+            refreshStatus();
+        }
+        async function setAutoHibernate(on) {
+            await fetch('/api/auto_hibernate', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({on:on})});
+            refreshStatus();
+        }
+        async function setAntiMistouch(on) {
+            await fetch('/api/anti_mistouch', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({on:on})});
+            refreshStatus();
         }
         async function toggleWriteProtection() {
             const res = await fetch('/api/write_protection', {
