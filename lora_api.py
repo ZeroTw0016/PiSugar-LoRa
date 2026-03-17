@@ -1,19 +1,3 @@
-@lora_api.route('/api/lora/frequency', methods=['GET', 'POST'])
-def lora_frequency():
-    if hasattr(lora_hat, 'freq'):
-        if flask.request.method == 'GET':
-            return flask.jsonify({'frequency': lora_hat.freq})
-        elif flask.request.method == 'POST':
-            data = flask.request.get_json(force=True)
-            freq = float(data.get('frequency', lora_hat.FREQ))
-            # Only allow switching to 868 or Germany frequency for receive
-            allowed = [lora_hat.FREQ, getattr(lora_hat, 'GERMANY_FREQ', 869.525)]
-            if freq in allowed:
-                lora_hat.set_frequency(freq)
-                return flask.jsonify({'frequency': lora_hat.freq, 'status': 'ok'})
-            else:
-                return flask.jsonify({'error': 'Frequency not allowed'}), 400
-    return flask.jsonify({'error': 'Not supported'}), 400
 from flask import Blueprint, jsonify
 from waveshare_lora_hat import WaveshareSX1262LoRaHAT
 import threading
@@ -78,6 +62,23 @@ def lora_messages():
 @lora_api.route('/api/lora/address', methods=['GET'])
 def lora_address():
     return jsonify({'address': lora_hat.addr})
+
+@lora_api.route('/api/lora/frequency', methods=['GET', 'POST'])
+def lora_frequency():
+    if hasattr(lora_hat, 'freq'):
+        if flask.request.method == 'GET':
+            return flask.jsonify({'frequency': lora_hat.freq})
+        elif flask.request.method == 'POST':
+            data = flask.request.get_json(force=True)
+            freq = float(data.get('frequency', lora_hat.FREQ))
+            # Only allow switching to 868 or Germany frequency for receive
+            allowed = [lora_hat.FREQ, getattr(lora_hat, 'GERMANY_FREQ', 869.525)]
+            if freq in allowed:
+                lora_hat.set_frequency(freq)
+                return flask.jsonify({'frequency': lora_hat.freq, 'status': 'ok'})
+            else:
+                return flask.jsonify({'error': 'Frequency not allowed'}), 400
+    return flask.jsonify({'error': 'Not supported'}), 400
 
 @lora_api.route('/api/lora/test', methods=['POST'])
 def lora_test():
