@@ -1,3 +1,22 @@
+/* Banner für Batterieanzeige */
+#battery-banner {
+    width: 100vw;
+    background: #23272a;
+    color: #fff;
+    text-align: center;
+    font-size: 1.2em;
+    font-weight: 500;
+    padding: 0.5em 0;
+    letter-spacing: 0.03em;
+    box-shadow: 0 2px 8px #0004;
+    z-index: 100;
+    position: sticky;
+    top: 0;
+}
+.battery-banner-inner {
+    display: inline-block;
+    padding: 0 1em;
+}
 /* Layout für WebApp */
 .main-layout {
     display: flex;

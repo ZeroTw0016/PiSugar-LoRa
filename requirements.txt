@@ -1,0 +1,4 @@
+flask
+smbus2
+pyserial
+RPi.GPIO

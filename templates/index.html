@@ -7,11 +7,11 @@
     <link rel="stylesheet" href="static/darkmode.css">
 </head>
 <body>
+    <div id="battery-banner"></div>
     <div class="main-layout">
-        <!-- Seitenpanel: Batterie-Infos -->
+        <!-- Seitenpanel: System-Infos -->
         <div class="side-panel">
-            <h2>Batterie & System</h2>
-            <div id="status"></div>
+            <h2>System</h2>
             <div class="controls">
                 <button onclick="toggleWriteProtection()" id="wpBtn">Toggle Write Protection</button>
                 <button onclick="refreshStatus()">Refresh Status</button>
@@ -31,14 +31,11 @@
         async function refreshStatus() {
             const res = await fetch('/api/status');
             const data = await res.json();
-            let html = '<table>';
-            for (const [k, v] of Object.entries(data)) {
-                if (["battery_percent","battery_voltage_mv","chip_temp_c","external_power","charging_switch","charging_protection"].includes(k)) {
-                    html += `<tr><td>${k}</td><td>${v}</td></tr>`;
-                }
-            }
-            html += '</table>';
-            document.getElementById('status').innerHTML = html;
+            // Banner oben aktualisieren
+            let banner = `<div class="battery-banner-inner">🔋 ${data.battery_percent}% &nbsp;`;
+            banner += data.external_power ? '<span style="color:#7ecfff">⚡ Eingesteckt</span>' : '<span style="color:#ffb347">🔌 Nicht eingesteckt</span>';
+            banner += '</div>';
+            document.getElementById('battery-banner').innerHTML = banner;
             document.getElementById('wpBtn').innerText = data.write_protection ? 'Disable Write Protection' : 'Enable Write Protection';
         }
         async function toggleWriteProtection() {
