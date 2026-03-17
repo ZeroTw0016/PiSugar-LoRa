@@ -38,6 +38,18 @@
         </div>
     </div>
     <script>
+
+                        function autoRefresh() {
+                            refreshStatus();
+                            loadLoraMessages();
+                            fetch('/api/battery_history').then(r=>r.json()).then(hist=>{ batteryHistory = hist; updateBatteryGraph(); updateEstimate(); updateBatteryPercentLabel(); });
+                            fetch('/api/shutdown_history').then(r=>r.json()).then(hist=>{ shutdownHistory = hist; updateShutdownHistory(); });
+                            setTimeout(autoRefresh, 2000);
+                        }
+
+                        window.onload = function() {
+                            autoRefresh();
+                        }
                 function updateBatteryPercentLabel() {
                     if (!batteryHistory.length) return;
                     const label = document.getElementById('battery-percent-label');
