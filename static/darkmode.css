@@ -1,3 +1,34 @@
+/* Batterie-Graph und Panels */
+#battery-graph-panel, #shutdown-history-panel {
+    margin-bottom: 1em;
+}
+#battery-graph {
+    width: 100%;
+    max-width: 280px;
+    background: #23272a;
+    border-radius: 8px;
+    display: block;
+    margin: 0 auto;
+}
+#battery-estimate {
+    margin-top: 0.5em;
+    font-size: 0.95em;
+    color: #7ecfff;
+    text-align: center;
+}
+#shutdown-history {
+    font-size: 0.95em;
+    color: #bbb;
+    padding-left: 1.2em;
+}
+.pisugar-edit-group {
+    margin-bottom: 0.5em;
+}
+.pisugar-edit-group button.active {
+    background: #7ecfff;
+    color: #181a1b;
+    font-weight: bold;
+}
 /* Banner für Batterieanzeige */
 #battery-banner {
     width: 100vw;

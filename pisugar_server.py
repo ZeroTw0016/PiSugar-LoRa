@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, request, abort, render_template
+from battery_store import store
 from lora_api import lora_api
 import smbus2
 import time
@@ -82,9 +83,22 @@ def get_status():
 @app.route('/api/status', methods=['GET'])
 def api_status():
     try:
-        return jsonify(get_status())
+        status = get_status()
+        # Battery history speichern
+        from time import time as _now
+        store.add_battery(status['battery_percent'], int(_now()*1000))
+        return jsonify(status)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+# API für Batterie-Historie
+@app.route('/api/battery_history', methods=['GET'])
+def api_battery_history():
+    return jsonify(store.get_battery_history())
+
+# API für Shutdown-Historie
+@app.route('/api/shutdown_history', methods=['GET'])
+def api_shutdown_history():
+    return jsonify(store.get_shutdowns())
 
 # Write-Protection-Endpunkt
 @app.route('/api/write_protection', methods=['GET', 'POST'])

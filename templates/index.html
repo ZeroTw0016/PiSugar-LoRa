@@ -11,10 +11,18 @@
     <div class="main-layout">
         <!-- Seitenpanel: System-Infos -->
         <div class="side-panel">
+                        <div id="battery-graph-panel">
+                            <h3>Batterie-Verbrauch</h3>
+                            <canvas id="battery-graph" width="280" height="120"></canvas>
+                            <div id="battery-estimate"></div>
+                        </div>
+                        <div id="shutdown-history-panel">
+                            <h3>Letzte Abschaltungen</h3>
+                            <ul id="shutdown-history"></ul>
+                        </div>
             <h2>System</h2>
             <div class="controls">
                 <button onclick="toggleWriteProtection()" id="wpBtn">Toggle Write Protection</button>
-                <button onclick="refreshStatus()">Refresh Status</button>
             </div>
             <div id="pisugar-controls"></div>
         </div>
@@ -29,6 +37,78 @@
         </div>
     </div>
     <script>
+        // --- Batterie-Graph und Abschalt-Historie ---
+        let batteryHistory = [];
+        let shutdownHistory = [];
+        let lastBatteryPercent = null;
+        let lastTimestamp = null;
+        let dischargeRates = [];
+
+        function updateBatteryGraph() {
+            const canvas = document.getElementById('battery-graph');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            if (batteryHistory.length < 2) return;
+            // Achsen
+            ctx.strokeStyle = '#444';
+            ctx.beginPath(); ctx.moveTo(30,10); ctx.lineTo(30,110); ctx.lineTo(270,110); ctx.stroke();
+            // Graph
+            ctx.strokeStyle = '#7ecfff';
+            ctx.beginPath();
+            let min = Math.min(...batteryHistory.map(x=>x.percent));
+            let max = Math.max(...batteryHistory.map(x=>x.percent));
+            if (min === max) { min -= 1; max += 1; }
+            for (let i=0;i<batteryHistory.length;i++) {
+                let x = 30 + (240 * i/(batteryHistory.length-1));
+                let y = 110 - 100*(batteryHistory[i].percent-min)/(max-min);
+                if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+            }
+            ctx.stroke();
+        }
+
+        function updateShutdownHistory() {
+            const ul = document.getElementById('shutdown-history');
+            ul.innerHTML = shutdownHistory.slice(-5).reverse().map(t => `<li>${new Date(t).toLocaleString()}</li>`).join('');
+        }
+
+        function updateEstimate() {
+            const estDiv = document.getElementById('battery-estimate');
+            if (dischargeRates.length < 3) { estDiv.innerText = 'Schätzung nicht verfügbar.'; return; }
+            // Gleitender Mittelwert der letzten 5 Entladeraten
+            let avgRate = dischargeRates.slice(-5).reduce((a,b)=>a+b,0)/Math.min(5,dischargeRates.length);
+            let last = batteryHistory[batteryHistory.length-1];
+            let estHours = last.percent / avgRate;
+            if (estHours > 0 && isFinite(estHours)) {
+                let h = Math.floor(estHours);
+                let m = Math.round((estHours-h)*60);
+                estDiv.innerText = `Geschätzte Restlaufzeit: ${h}h ${m}min`;
+            } else {
+                estDiv.innerText = 'Schätzung nicht verfügbar.';
+            }
+        }
+            // Batterie-Verlauf und Abschalt-Logik
+            const now = Date.now();
+            if (lastBatteryPercent !== null && lastTimestamp !== null) {
+                if (data.battery_percent < lastBatteryPercent) {
+                    // Entladung: Rate merken
+                    let dt = (now-lastTimestamp)/3600000; // Stunden
+                    let dr = (lastBatteryPercent-data.battery_percent)/dt;
+                    if (dr > 0 && dr < 100) dischargeRates.push(dr);
+                }
+                if (data.battery_percent > lastBatteryPercent+5) {
+                    // Gerät wurde vermutlich geladen oder neugestartet
+                    shutdownHistory.push(now);
+                    updateShutdownHistory();
+                }
+            }
+            batteryHistory.push({percent:data.battery_percent, time:now});
+            if (batteryHistory.length > 50) batteryHistory.shift();
+            lastBatteryPercent = data.battery_percent;
+            lastTimestamp = now;
+            updateBatteryGraph();
+            updateEstimate();
+
         async function refreshStatus() {
             const res = await fetch('/api/status');
             const data = await res.json();
@@ -39,22 +119,24 @@
             document.getElementById('battery-banner').innerHTML = banner;
             document.getElementById('wpBtn').innerText = data.write_protection ? 'Disable Write Protection' : 'Enable Write Protection';
 
-            // PiSugar Controls
+            // PiSugar Controls mit Status
             let controls = '';
             if (!data.write_protection) {
-                controls += `<div class='pisugar-edit-group'><b>Timing Boot:</b> <button onclick='setTimingBoot(true)'>An</button> <button onclick='setTimingBoot(false)'>Aus</button></div>`;
-                controls += `<div class='pisugar-edit-group'><b>Auto Resume Boot:</b> <button onclick='setAutoResumeBoot(true)'>An</button> <button onclick='setAutoResumeBoot(false)'>Aus</button></div>`;
-                controls += `<div class='pisugar-edit-group'><b>Soft Shutdown:</b> <button onclick='setSoftShutdown(true)'>An</button> <button onclick='setSoftShutdown(false)'>Aus</button></div>`;
-                controls += `<div class='pisugar-edit-group'><b>Watchdog:</b> <button onclick='setWatchdog(true)'>An</button> <button onclick='setWatchdog(false)'>Aus</button></div>`;
-                controls += `<div class='pisugar-edit-group'><b>Boot Watchdog:</b> <button onclick='setBootWatchdog(true)'>An</button> <button onclick='setBootWatchdog(false)'>Aus</button></div>`;
-                controls += `<div class='pisugar-edit-group'><b>Charging Protection:</b> <button onclick='setChargingProtection(true)'>An</button> <button onclick='setChargingProtection(false)'>Aus</button></div>`;
-                controls += `<div class='pisugar-edit-group'><b>Auto Hibernate:</b> <button onclick='setAutoHibernate(true)'>An</button> <button onclick='setAutoHibernate(false)'>Aus</button></div>`;
-                controls += `<div class='pisugar-edit-group'><b>Anti Mistouch:</b> <button onclick='setAntiMistouch(true)'>An</button> <button onclick='setAntiMistouch(false)'>Aus</button></div>`;
+                controls += `<div class='pisugar-edit-group'><b>Timing Boot:</b> <button onclick='setTimingBoot(true)' class='${data.timing_boot_enabled ? "active" : ""}'>An</button> <button onclick='setTimingBoot(false)' class='${!data.timing_boot_enabled ? "active" : ""}'>Aus</button></div>`;
+                controls += `<div class='pisugar-edit-group'><b>Auto Resume Boot:</b> <button onclick='setAutoResumeBoot(true)' class='${data.auto_resume_boot ? "active" : ""}'>An</button> <button onclick='setAutoResumeBoot(false)' class='${!data.auto_resume_boot ? "active" : ""}'>Aus</button></div>`;
+                controls += `<div class='pisugar-edit-group'><b>Soft Shutdown:</b> <button onclick='setSoftShutdown(true)' class='${data.soft_shutdown ? "active" : ""}'>An</button> <button onclick='setSoftShutdown(false)' class='${!data.soft_shutdown ? "active" : ""}'>Aus</button></div>`;
+                controls += `<div class='pisugar-edit-group'><b>Watchdog:</b> <button onclick='setWatchdog(true)' class='${data.watchdog_enabled ? "active" : ""}'>An</button> <button onclick='setWatchdog(false)' class='${!data.watchdog_enabled ? "active" : ""}'>Aus</button></div>`;
+                controls += `<div class='pisugar-edit-group'><b>Boot Watchdog:</b> <button onclick='setBootWatchdog(true)' class='${data.boot_watchdog_enabled ? "active" : ""}'>An</button> <button onclick='setBootWatchdog(false)' class='${!data.boot_watchdog_enabled ? "active" : ""}'>Aus</button></div>`;
+                controls += `<div class='pisugar-edit-group'><b>Charging Protection:</b> <button onclick='setChargingProtection(true)' class='${data.charging_protection ? "active" : ""}'>An</button> <button onclick='setChargingProtection(false)' class='${!data.charging_protection ? "active" : ""}'>Aus</button></div>`;
+                controls += `<div class='pisugar-edit-group'><b>Auto Hibernate:</b> <button onclick='setAutoHibernate(true)' class='${data.auto_hibernate ? "active" : ""}'>An</button> <button onclick='setAutoHibernate(false)' class='${!data.auto_hibernate ? "active" : ""}'>Aus</button></div>`;
+                controls += `<div class='pisugar-edit-group'><b>Anti Mistouch:</b> <button onclick='setAntiMistouch(true)' class='${data.anti_mistouch ? "active" : ""}'>An</button> <button onclick='setAntiMistouch(false)' class='${!data.anti_mistouch ? "active" : ""}'>Aus</button></div>`;
             } else {
                 controls = `<div style='color:#888; font-size:0.95em;'>Write Protection aktiv – Einstellungen gesperrt.</div>`;
             }
             document.getElementById('pisugar-controls').innerHTML = controls;
         }
+    // Style für aktive Buttons
+
 
         // PiSugar Control-APIs
         async function setTimingBoot(on) {
@@ -121,6 +203,9 @@
         function autoRefresh() {
             refreshStatus();
             loadLoraMessages();
+            // Lade persistente Daten
+            fetch('/api/battery_history').then(r=>r.json()).then(hist=>{ batteryHistory = hist; updateBatteryGraph(); updateEstimate(); });
+            fetch('/api/shutdown_history').then(r=>r.json()).then(hist=>{ shutdownHistory = hist; updateShutdownHistory(); });
             setTimeout(autoRefresh, 2000);
         }
         window.onload = function() {
