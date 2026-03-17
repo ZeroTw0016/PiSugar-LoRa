@@ -65,9 +65,10 @@ def lora_address():
 
 @lora_api.route('/api/lora/test', methods=['POST'])
 def lora_test():
-    # Test: Sende eine Testnachricht und prüfe Empfang
+    # Test: Sende eine Testnachricht mit Prefix und prüfe Empfang
     import datetime
-    test_msg = f"TEST_{datetime.datetime.now().strftime('%H%M%S')}"
+    PREFIX = "LORATEST_"
+    test_msg = f"{PREFIX}{lora_hat.addr}_{datetime.datetime.now().strftime('%H%M%S')}"
     lora_hat.send(test_msg.encode('utf-8'))
     # Warte kurz und versuche zu empfangen
     import time
@@ -81,6 +82,7 @@ def lora_test():
 
 def lora_receive_background():
     import datetime
+    PREFIX = "LORATEST_"
     while True:
         r = lora_hat.receive()
         if r:
@@ -91,6 +93,11 @@ def lora_receive_background():
             if len(messages) > MAX_LORA_MSGS:
                 messages[:] = messages[-MAX_LORA_MSGS:]
             save_lora_messages(messages)
+            # Automatisches Reply auf Testnachrichten mit Prefix
+            if msg.startswith(PREFIX) and str(lora_hat.addr) not in msg:
+                # Antworte mit gleichem Inhalt zurück
+                print(f"[LoRa] Reply to test: {msg}")
+                lora_hat.send(msg.encode('utf-8'))
         import time
         time.sleep(1)
 
