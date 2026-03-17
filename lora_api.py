@@ -31,8 +31,10 @@ def lora_send():
     from flask import request
     data = request.get_json(force=True)
     msg = data.get('msg', '')
+    import datetime
     lora_hat.send(msg.encode('utf-8'))
-    messages.append({'type': 'sent', 'msg': msg})
+    timestamp = datetime.datetime.now().isoformat(timespec='seconds')
+    messages.append({'type': 'sent', 'msg': msg, 'timestamp': timestamp})
     if len(messages) > MAX_LORA_MSGS:
         messages[:] = messages[-MAX_LORA_MSGS:]
     save_lora_messages(messages)
@@ -40,28 +42,32 @@ def lora_send():
 
 @lora_api.route('/api/lora/receive', methods=['GET'])
 def lora_receive():
+    import datetime
     r = lora_hat.receive()
     if r:
         msg = r.decode('utf-8', errors='replace')
+        timestamp = datetime.datetime.now().isoformat(timespec='seconds')
         print(f"[LoRa] Empfangen (API): {msg}")
-        messages.append({'type': 'recv', 'msg': msg})
+        messages.append({'type': 'recv', 'msg': msg, 'timestamp': timestamp})
         if len(messages) > MAX_LORA_MSGS:
             messages[:] = messages[-MAX_LORA_MSGS:]
         save_lora_messages(messages)
-        return jsonify({'msg': msg})
-    return jsonify({'msg': None})
+        return jsonify({'msg': msg, 'timestamp': timestamp})
+    return jsonify({'msg': None, 'timestamp': None})
 
 @lora_api.route('/api/lora/messages', methods=['GET'])
 def lora_messages():
     return jsonify(messages)
 
 def lora_receive_background():
+    import datetime
     while True:
         r = lora_hat.receive()
         if r:
             msg = r.decode('utf-8', errors='replace')
+            timestamp = datetime.datetime.now().isoformat(timespec='seconds')
             print(f"[LoRa] Empfangen (Background): {msg}")
-            messages.append({'type': 'recv', 'msg': msg})
+            messages.append({'type': 'recv', 'msg': msg, 'timestamp': timestamp})
             if len(messages) > MAX_LORA_MSGS:
                 messages[:] = messages[-MAX_LORA_MSGS:]
             save_lora_messages(messages)

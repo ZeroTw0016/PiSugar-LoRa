@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 
 DATA_FILE = 'battery_data.json'
-MAX_HISTORY = 100  # Maximal gespeicherte Werte
+MAX_HISTORY = 10000  # Maximal gespeicherte Werte
 
 class BatteryDataStore:
     def __init__(self, path=DATA_FILE):

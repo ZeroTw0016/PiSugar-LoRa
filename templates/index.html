@@ -207,7 +207,8 @@
             const msgs = await res.json();
             let html = '';
             for (const m of msgs) {
-                html += `<div class="lora-msg ${m.type}"><b>${m.type === 'sent' ? 'Gesendet' : 'Empfangen'}:</b> <span>${m.msg}</span></div>`;
+                let ts = m.timestamp ? `<span class="lora-timestamp">[${new Date(m.timestamp).toLocaleString()}]</span> ` : '';
+                html += `<div class="lora-msg ${m.type}">${ts}<b>${m.type === 'sent' ? 'Gesendet' : 'Empfangen'}:</b> <span>${m.msg}</span></div>`;
             }
             document.getElementById('lora-messages').innerHTML = html;
         }
