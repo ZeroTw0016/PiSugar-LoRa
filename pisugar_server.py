@@ -90,10 +90,11 @@ def api_write_protection():
     if request.method == 'GET':
         return jsonify({'write_protection': is_write_protection_on()})
     if request.method == 'POST':
-        if is_write_protection_on():
-            abort(403, description='Write protection is enabled. Changes are not allowed.')
         data = request.get_json(force=True)
         enabled = bool(data.get('enabled', True))
+        # Nur das Aktivieren blockieren, wenn bereits aktiv
+        if enabled and is_write_protection_on():
+            abort(403, description='Write protection is enabled. Changes are not allowed.')
         set_write_protection(enabled)
         return jsonify({'write_protection': is_write_protection_on()})
 

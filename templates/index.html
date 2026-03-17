@@ -7,15 +7,24 @@
     <link rel="stylesheet" href="static/darkmode.css">
 </head>
 <body>
-    <div class="container">
-        <h1>PiSugar 3 WebUI</h1>
-        <div id="status"></div>
-        <div class="controls">
-            <button onclick="toggleWriteProtection()" id="wpBtn">Toggle Write Protection</button>
-            <button onclick="refreshStatus()">Refresh Status</button>
+    <div class="main-layout" style="display: flex; height: 95vh;">
+        <!-- Seitenpanel: Batterie-Infos -->
+        <div class="side-panel" style="width: 320px; background: #222; color: #fff; padding: 1em; overflow-y: auto;">
+            <h2>Batterie & System</h2>
+            <div id="status"></div>
+            <div class="controls">
+                <button onclick="toggleWriteProtection()" id="wpBtn">Toggle Write Protection</button>
+                <button onclick="refreshStatus()">Refresh Status</button>
+            </div>
         </div>
-        <div id="api-controls">
-            <!-- Weitere API-Steuerungen können hier ergänzt werden -->
+        <!-- Hauptpanel: LoRa -->
+        <div class="main-panel" style="flex: 1; background: #181818; color: #fff; padding: 1em; overflow-y: auto;">
+            <h2>LoRa Nachrichten</h2>
+            <div id="lora-messages" style="height: 60vh; overflow-y: auto; background: #222; margin-bottom: 1em; padding: 1em; border-radius: 8px;"></div>
+            <form id="lora-send-form" onsubmit="sendLoraMsg(event)" style="display: flex; gap: 0.5em;">
+                <input type="text" id="lora-msg" placeholder="Nachricht senden..." style="flex: 1; padding: 0.5em; border-radius: 4px; border: none;">
+                <button type="submit">Senden</button>
+            </form>
         </div>
     </div>
     <script>
@@ -24,7 +33,9 @@
             const data = await res.json();
             let html = '<table>';
             for (const [k, v] of Object.entries(data)) {
-                html += `<tr><td>${k}</td><td>${v}</td></tr>`;
+                if (["battery_percent","battery_voltage_mv","chip_temp_c","external_power","charging_switch","charging_protection"].includes(k)) {
+                    html += `<tr><td>${k}</td><td>${v}</td></tr>`;
+                }
             }
             html += '</table>';
             document.getElementById('status').innerHTML = html;
@@ -38,7 +49,35 @@
             });
             refreshStatus();
         }
-        window.onload = refreshStatus;
+        async function loadLoraMessages() {
+            const res = await fetch('/api/lora/messages');
+            const msgs = await res.json();
+            let html = '';
+            for (const m of msgs) {
+                html += `<div style="margin-bottom:0.5em;"><b>${m.type === 'sent' ? 'Gesendet' : 'Empfangen'}:</b> <span>${m.msg}</span></div>`;
+            }
+            document.getElementById('lora-messages').innerHTML = html;
+        }
+        async function sendLoraMsg(e) {
+            e.preventDefault();
+            const msg = document.getElementById('lora-msg').value;
+            if (!msg) return;
+            await fetch('/api/lora/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ msg })
+            });
+            document.getElementById('lora-msg').value = '';
+            await loadLoraMessages();
+        }
+        async function pollLora() {
+            await loadLoraMessages();
+            setTimeout(pollLora, 2000);
+        }
+        window.onload = function() {
+            refreshStatus();
+            pollLora();
+        }
     </script>
 </body>
 </html>
