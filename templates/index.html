@@ -10,7 +10,11 @@
       <div id="battery-banner"></div>
       <div class="main-layout">
          <!-- Seitenpanel: System-Infos -->
-         <div class="side-panel">
+            <div class="side-panel">
+                <div id="lora-settings-panel" style="margin-bottom:20px;">
+                    <h3>LoRa Einstellungen</h3>
+                    <div id="lora-frequency-panel-sidebar"></div>
+                </div>
             <div id="battery-graph-panel">
                <h3>Batterie-Verbrauch</h3>
                <canvas id="battery-graph" width="280" height="120"></canvas>
@@ -31,7 +35,7 @@
          <div class="main-panel">
             <h2>LoRa Nachrichten</h2>
             <div id="lora-address-panel" style="margin-bottom:10px;"></div>
-            <div id="lora-frequency-panel" style="margin-bottom:10px;"></div>
+
             <button onclick="runLoraTest()" id="lora-test-btn">LoRa Test (Senden & Empfangen)</button>
             <div id="lora-test-result" style="margin:10px 0;"></div>
             <div id="lora-messages"></div>
@@ -42,19 +46,25 @@
          </div>
       </div>
       <script>
+
          async function loadLoraFrequency() {
-                     const res = await fetch('/api/lora/frequency');
-                     const data = await res.json();
-                     let freq = data.frequency;
-                     let html = `<b>Frequenz (Empfang):</b> <span id='freq-val'>${freq} MHz</span> `;
-                     html += `<select id='freq-select'>
-                         <option value='868'>868 MHz (EU)</option>
-                         <option value='869.525'>869.525 MHz (Germany)</option>
-                     </select>`;
-                     html += `<button onclick='switchLoraFrequency()'>Wechseln</button>`;
-                     document.getElementById('lora-frequency-panel').innerHTML = html;
-                     document.getElementById('freq-select').value = freq;
-                 }
+            const res = await fetch('/api/lora/frequency');
+            const data = await res.json();
+            let freq = data.frequency;
+            let html = `<b>Frequenz (Empfang):</b> <span id='freq-val'>${freq} MHz</span> `;
+            html += `<select id='freq-select'>
+                <option value='868'>868 MHz (EU)</option>
+                <option value='869.525'>869.525 MHz (Germany)</option>
+            </select>`;
+            html += `<button onclick='switchLoraFrequency()'>Wechseln</button>`;
+            // Show in both sidebar and main panel if present
+            const freqPanelSidebar = document.getElementById('lora-frequency-panel-sidebar');
+            if (freqPanelSidebar) freqPanelSidebar.innerHTML = html;
+            const freqPanelMain = document.getElementById('lora-frequency-panel');
+            if (freqPanelMain) freqPanelMain.innerHTML = html;
+            // Set select value in both
+            if (document.getElementById('freq-select')) document.getElementById('freq-select').value = freq;
+         }
          
                  async function switchLoraFrequency() {
                      const sel = document.getElementById('freq-select');
