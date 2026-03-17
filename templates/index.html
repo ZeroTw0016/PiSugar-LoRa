@@ -31,6 +31,7 @@
         <div class="main-panel">
             <h2>LoRa Nachrichten</h2>
             <div id="lora-address-panel" style="margin-bottom:10px;"></div>
+            <div id="lora-frequency-panel" style="margin-bottom:10px;"></div>
             <button onclick="runLoraTest()" id="lora-test-btn">LoRa Test (Senden & Empfangen)</button>
             <div id="lora-test-result" style="margin:10px 0;"></div>
             <div id="lora-messages"></div>
@@ -38,6 +39,35 @@
                 <input type="text" id="lora-msg" placeholder="Nachricht senden...">
                 <button type="submit">Senden</button>
             </form>
+                async function loadLoraFrequency() {
+                    const res = await fetch('/api/lora/frequency');
+                    const data = await res.json();
+                    let freq = data.frequency;
+                    let html = `<b>Frequenz (Empfang):</b> <span id='freq-val'>${freq} MHz</span> `;
+                    html += `<select id='freq-select'>
+                        <option value='868'>868 MHz (EU)</option>
+                        <option value='869.525'>869.525 MHz (Germany)</option>
+                    </select>`;
+                    html += `<button onclick='switchLoraFrequency()'>Wechseln</button>`;
+                    document.getElementById('lora-frequency-panel').innerHTML = html;
+                    document.getElementById('freq-select').value = freq;
+                }
+
+                async function switchLoraFrequency() {
+                    const sel = document.getElementById('freq-select');
+                    const freq = parseFloat(sel.value);
+                    const res = await fetch('/api/lora/frequency', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({frequency: freq})
+                    });
+                    const data = await res.json();
+                    if (data.frequency) {
+                        document.getElementById('freq-val').innerText = data.frequency + ' MHz';
+                    } else if (data.error) {
+                        alert('Fehler: ' + data.error);
+                    }
+                }
         </div>
     </div>
     <script>
@@ -70,6 +100,7 @@
                         window.onload = function() {
                             fetch('/api/shutdown_history').then(r=>r.json()).then(hist=>{ shutdownHistory = hist; updateShutdownHistory(); });
                             loadLoraAddress();
+                            loadLoraFrequency();
                             autoRefresh();
                         }
                 function updateBatteryPercentLabel() {
@@ -154,7 +185,7 @@
             const data = await res.json();
             // Banner oben aktualisieren
             let banner = `<div class="battery-banner-inner">🔋 ${data.battery_percent}% &nbsp;`;
-            banner += data.external_power ? '<span style="color:#7ecfff">⚡ Eingesteckt</span>' : '<span style="color:#ffb347">🔌 Nicht eingesteckt</span>';
+            banner += data.external_power ? '<span style="color:#7ecfff">⚡ Angeschlossen</span>' : '<span style="color:#ffb347">🔌 Nicht eingesteckt</span>';
             banner += '</div>';
             document.getElementById('battery-banner').innerHTML = banner;
             document.getElementById('wpBtn').innerText = data.write_protection ? 'Disable Write Protection' : 'Enable Write Protection';

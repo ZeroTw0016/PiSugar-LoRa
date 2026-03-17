@@ -20,19 +20,16 @@ class WaveshareSX1262LoRaHAT:
     AUX = 17
     UART_PORT = '/dev/ttyS0'  # ggf. anpassen
     UART_BAUDRATE = 9600
-    FREQ = 868
+    FREQ = 868  # Default frequency (MHz)
+    GERMANY_FREQ = 869.525  # Example Germany frequency (MHz)
 
-    def __init__(self, addr=None, power=22, rssi=False, air_speed=2400, net_id=0, buffer_size=240, crypt=0):
+    def __init__(self, addr=None, power=22, rssi=False, air_speed=2400, net_id=0, buffer_size=240, crypt=0, freq=None):
         hostname = socket.gethostname()
-        # Suche nach einer zweistelligen Zahl am Ende des Hostnamens
-        import re
-        match = re.search(r'(\d{2})$', hostname)
-        if match:
-            suffix = int(match.group(1))
-        else:
-            suffix = 1  # Fallback, falls keine Zahl gefunden wird
-        custom_addr = 0x9400 | (suffix & 0xFF)
+        # Always use 0x9401 for ZeroLora02 (or fallback to 0x9401)
+        custom_addr = 0x9401
         self.addr = addr if addr is not None else custom_addr
+        # Frequency logic
+        self.freq = freq if freq is not None else self.FREQ
         self.power = power
         self.rssi = rssi
         self.air_speed = air_speed
@@ -53,6 +50,15 @@ class WaveshareSX1262LoRaHAT:
         time.sleep(0.1)
         self.set_mode_normal()
 
+    def set_frequency(self, freq_mhz):
+        """
+        Set the frequency for receiving. Only 868 MHz is allowed for sending.
+        """
+        self.freq = freq_mhz
+        # If hardware supports dynamic frequency, set it here
+        # (Add hardware-specific code if needed)
+        print(f"[LoRa] Frequency set to {self.freq} MHz (send only allowed on 868 MHz)")
+
     def set_mode_normal(self):
         GPIO.output(self.M0, GPIO.LOW)
         GPIO.output(self.M1, GPIO.LOW)
@@ -64,6 +70,9 @@ class WaveshareSX1262LoRaHAT:
         time.sleep(0.1)
 
     def send(self, data: bytes):
+        if self.freq != self.FREQ:
+            print(f"[LoRa] SEND BLOCKED: Sending is only allowed on {self.FREQ} MHz, current frequency is {self.freq} MHz.")
+            raise RuntimeError(f"Sending is only allowed on {self.FREQ} MHz!")
         self.set_mode_normal()
         self.ser.write(data)
         time.sleep(0.1)
