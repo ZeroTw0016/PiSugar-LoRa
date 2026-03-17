@@ -22,6 +22,7 @@ def lora_receive():
     r = lora_hat.receive()
     if r:
         msg = r.decode('utf-8', errors='replace')
+        print(f"[LoRa] Empfangen (API): {msg}")
         messages.append({'type': 'recv', 'msg': msg})
         return jsonify({'msg': msg})
     return jsonify({'msg': None})
@@ -35,6 +36,7 @@ def lora_receive_background():
         r = lora_hat.receive()
         if r:
             msg = r.decode('utf-8', errors='replace')
+            print(f"[LoRa] Empfangen (Background): {msg}")
             messages.append({'type': 'recv', 'msg': msg})
         import time
         time.sleep(1)

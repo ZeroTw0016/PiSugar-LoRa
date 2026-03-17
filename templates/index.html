@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>PiSugar 3 WebUI</title>
     <link rel="stylesheet" href="static/darkmode.css">
 </head>
 <body>
-    <div class="main-layout" style="display: flex; height: 95vh;">
+    <div class="main-layout">
         <!-- Seitenpanel: Batterie-Infos -->
-        <div class="side-panel" style="width: 320px; background: #222; color: #fff; padding: 1em; overflow-y: auto;">
+        <div class="side-panel">
             <h2>Batterie & System</h2>
             <div id="status"></div>
             <div class="controls">
@@ -18,11 +18,11 @@
             </div>
         </div>
         <!-- Hauptpanel: LoRa -->
-        <div class="main-panel" style="flex: 1; background: #181818; color: #fff; padding: 1em; overflow-y: auto;">
+        <div class="main-panel">
             <h2>LoRa Nachrichten</h2>
-            <div id="lora-messages" style="height: 60vh; overflow-y: auto; background: #222; margin-bottom: 1em; padding: 1em; border-radius: 8px;"></div>
-            <form id="lora-send-form" onsubmit="sendLoraMsg(event)" style="display: flex; gap: 0.5em;">
-                <input type="text" id="lora-msg" placeholder="Nachricht senden..." style="flex: 1; padding: 0.5em; border-radius: 4px; border: none;">
+            <div id="lora-messages"></div>
+            <form id="lora-send-form" onsubmit="sendLoraMsg(event)">
+                <input type="text" id="lora-msg" placeholder="Nachricht senden...">
                 <button type="submit">Senden</button>
             </form>
         </div>
@@ -54,7 +54,7 @@
             const msgs = await res.json();
             let html = '';
             for (const m of msgs) {
-                html += `<div style="margin-bottom:0.5em;"><b>${m.type === 'sent' ? 'Gesendet' : 'Empfangen'}:</b> <span>${m.msg}</span></div>`;
+                html += `<div class="lora-msg ${m.type}"><b>${m.type === 'sent' ? 'Gesendet' : 'Empfangen'}:</b> <span>${m.msg}</span></div>`;
             }
             document.getElementById('lora-messages').innerHTML = html;
         }
@@ -70,13 +70,13 @@
             document.getElementById('lora-msg').value = '';
             await loadLoraMessages();
         }
-        async function pollLora() {
-            await loadLoraMessages();
-            setTimeout(pollLora, 2000);
+        function autoRefresh() {
+            refreshStatus();
+            loadLoraMessages();
+            setTimeout(autoRefresh, 2000);
         }
         window.onload = function() {
-            refreshStatus();
-            pollLora();
+            autoRefresh();
         }
     </script>
 </body>
