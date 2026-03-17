@@ -1,22 +1,3 @@
-@lora_api.route('/api/lora/address', methods=['GET'])
-def lora_address():
-    return jsonify({'address': lora_hat.addr})
-
-@lora_api.route('/api/lora/test', methods=['POST'])
-def lora_test():
-    # Test: Sende eine Testnachricht und prüfe Empfang
-    import datetime
-    test_msg = f"TEST_{datetime.datetime.now().strftime('%H%M%S')}"
-    lora_hat.send(test_msg.encode('utf-8'))
-    # Warte kurz und versuche zu empfangen
-    import time
-    time.sleep(1)
-    received = lora_hat.receive()
-    if received and test_msg in received.decode('utf-8', errors='replace'):
-        result = 'OK'
-    else:
-        result = 'FAILED'
-    return jsonify({'test_sent': test_msg, 'result': result, 'received': received.decode('utf-8', errors='replace') if received else None})
 from flask import Blueprint, jsonify
 from waveshare_lora_hat import WaveshareSX1262LoRaHAT
 import threading
@@ -77,6 +58,26 @@ def lora_receive():
 @lora_api.route('/api/lora/messages', methods=['GET'])
 def lora_messages():
     return jsonify(messages)
+
+@lora_api.route('/api/lora/address', methods=['GET'])
+def lora_address():
+    return jsonify({'address': lora_hat.addr})
+
+@lora_api.route('/api/lora/test', methods=['POST'])
+def lora_test():
+    # Test: Sende eine Testnachricht und prüfe Empfang
+    import datetime
+    test_msg = f"TEST_{datetime.datetime.now().strftime('%H%M%S')}"
+    lora_hat.send(test_msg.encode('utf-8'))
+    # Warte kurz und versuche zu empfangen
+    import time
+    time.sleep(1)
+    received = lora_hat.receive()
+    if received and test_msg in received.decode('utf-8', errors='replace'):
+        result = 'OK'
+    else:
+        result = 'FAILED'
+    return jsonify({'test_sent': test_msg, 'result': result, 'received': received.decode('utf-8', errors='replace') if received else None})
 
 def lora_receive_background():
     import datetime
