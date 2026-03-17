@@ -11,6 +11,7 @@ https://www.waveshare.com/wiki/SX1262_868M_LoRa_HAT
 import RPi.GPIO as GPIO
 import serial
 import time
+import socket
 
 class WaveshareSX1262LoRaHAT:
     # Standard-Pinbelegung laut Waveshare-Doku
@@ -21,8 +22,17 @@ class WaveshareSX1262LoRaHAT:
     UART_BAUDRATE = 9600
     FREQ = 868
 
-    def __init__(self, addr=0xFFFF, power=22, rssi=False, air_speed=2400, net_id=0, buffer_size=240, crypt=0):
-        self.addr = addr
+    def __init__(self, addr=None, power=22, rssi=False, air_speed=2400, net_id=0, buffer_size=240, crypt=0):
+        hostname = socket.gethostname()
+        # Suche nach einer zweistelligen Zahl am Ende des Hostnamens
+        import re
+        match = re.search(r'(\d{2})$', hostname)
+        if match:
+            suffix = int(match.group(1))
+        else:
+            suffix = 1  # Fallback, falls keine Zahl gefunden wird
+        custom_addr = 0x9400 | (suffix & 0xFF)
+        self.addr = addr if addr is not None else custom_addr
         self.power = power
         self.rssi = rssi
         self.air_speed = air_speed

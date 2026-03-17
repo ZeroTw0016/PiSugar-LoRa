@@ -30,6 +30,9 @@
         <!-- Hauptpanel: LoRa -->
         <div class="main-panel">
             <h2>LoRa Nachrichten</h2>
+            <div id="lora-address-panel" style="margin-bottom:10px;"></div>
+            <button onclick="runLoraTest()" id="lora-test-btn">LoRa Test (Senden & Empfangen)</button>
+            <div id="lora-test-result" style="margin:10px 0;"></div>
             <div id="lora-messages"></div>
             <form id="lora-send-form" onsubmit="sendLoraMsg(event)">
                 <input type="text" id="lora-msg" placeholder="Nachricht senden...">
@@ -38,6 +41,19 @@
         </div>
     </div>
     <script>
+        async function loadLoraAddress() {
+            const res = await fetch('/api/lora/address');
+            const data = await res.json();
+            document.getElementById('lora-address-panel').innerHTML = `<b>Eigene LoRa-Adresse:</b> 0x${data.address.toString(16).padStart(4,'0').toUpperCase()}`;
+        }
+        async function runLoraTest() {
+            document.getElementById('lora-test-btn').disabled = true;
+            document.getElementById('lora-test-result').innerText = 'Test läuft...';
+            const res = await fetch('/api/lora/test', {method:'POST'});
+            const data = await res.json();
+            document.getElementById('lora-test-result').innerHTML = `<b>Test gesendet:</b> ${data.test_sent}<br><b>Empfangen:</b> ${data.received || '-'}<br><b>Ergebnis:</b> <span style='color:${data.result==='OK'?'#0f0':'#f00'}'>${data.result}</span>`;
+            document.getElementById('lora-test-btn').disabled = false;
+        }
 
                         let lastBatteryUpdate = 0;
                         function autoRefresh() {
@@ -53,6 +69,7 @@
 
                         window.onload = function() {
                             fetch('/api/shutdown_history').then(r=>r.json()).then(hist=>{ shutdownHistory = hist; updateShutdownHistory(); });
+                            loadLoraAddress();
                             autoRefresh();
                         }
                 function updateBatteryPercentLabel() {
