@@ -39,11 +39,16 @@
     </div>
     <script>
 
+                        let lastBatteryUpdate = 0;
                         function autoRefresh() {
                             refreshStatus();
                             loadLoraMessages();
-                            fetch('/api/battery_history').then(r=>r.json()).then(hist=>{ batteryHistory = hist; updateBatteryGraph(); updateEstimate(); updateBatteryPercentLabel(); });
-                            fetch('/api/shutdown_history').then(r=>r.json()).then(hist=>{ shutdownHistory = hist; updateShutdownHistory(); });
+                            const now = Date.now();
+                            if (now - lastBatteryUpdate > 60000 || lastBatteryUpdate === 0) {
+                                fetch('/api/battery_history').then(r=>r.json()).then(hist=>{ batteryHistory = hist; updateBatteryGraph(); updateEstimate(); updateBatteryPercentLabel(); });
+                                fetch('/api/shutdown_history').then(r=>r.json()).then(hist=>{ shutdownHistory = hist; updateShutdownHistory(); });
+                                lastBatteryUpdate = now;
+                            }
                             setTimeout(autoRefresh, 2000);
                         }
 
@@ -75,9 +80,8 @@
             // Graph
             ctx.strokeStyle = '#7ecfff';
             ctx.beginPath();
-            let min = Math.min(...batteryHistory.map(x=>x.percent));
-            let max = Math.max(...batteryHistory.map(x=>x.percent));
-            if (min === max) { min -= 1; max += 1; }
+            let min = 0;
+            let max = 100;
             for (let i=0;i<batteryHistory.length;i++) {
                 let x = 30 + (240 * i/(batteryHistory.length-1));
                 let y = 110 - 100*(batteryHistory[i].percent-min)/(max-min);
