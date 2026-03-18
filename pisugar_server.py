@@ -436,6 +436,17 @@ def api_bluetooth_scan():
         return jsonify({'devices': devices})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+# Bluetooth: Audio-Ausgabe-Gerät setzen
+@app.route('/api/bluetooth/output', methods=['POST'])
+def api_bluetooth_output():
+    data = request.get_json(force=True)
+    address = data.get('address')
+    if not address:
+        return jsonify({'success': False, 'error': 'No address provided'}), 400
+    from bluetooth_state import selected_bt_output
+    selected_bt_output['address'] = address
+    return jsonify({'success': True})
 
 @app.route('/')
 def index():
