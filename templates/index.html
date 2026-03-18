@@ -57,15 +57,27 @@
 
                  // --- Bluetooth Panel ---
                  let scanning = false;
+                 let scanInterval = null;
                  async function toggleScanBluetoothDevices() {
                      scanning = !scanning;
                      document.getElementById('scan-btn').innerText = scanning ? 'Scan stoppen' : 'Scan starten';
                      document.getElementById('bluetooth-scan-results').innerText = scanning ? 'Suche läuft...' : '';
-                     const res = await fetch('/api/bluetooth/scan', {
+                     await fetch('/api/bluetooth/scan', {
                          method: 'POST',
                          headers: { 'Content-Type': 'application/json' },
                          body: JSON.stringify({ scan_on: scanning })
                      });
+                     if (scanning) {
+                         scanInterval = setInterval(loadFoundBluetoothDevices, 2000);
+                         loadFoundBluetoothDevices();
+                     } else {
+                         clearInterval(scanInterval);
+                         document.getElementById('bluetooth-scan-results').innerText = '';
+                     }
+                 }
+
+                 async function loadFoundBluetoothDevices() {
+                     const res = await fetch('/api/bluetooth/found');
                      const data = await res.json();
                      let html = '';
                      if (data.devices && data.devices.length) {

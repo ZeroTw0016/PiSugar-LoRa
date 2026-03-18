@@ -450,6 +450,16 @@ def api_bluetooth_output():
     selected_bt_output['address'] = address
     return jsonify({'success': True})
 
+# Bluetooth: Gefundene Geräte (ohne Pairing)
+@app.route('/api/bluetooth/found', methods=['GET'])
+def api_bluetooth_found():
+    try:
+        from bluetooth_utils import scan_bluetooth_devices
+        devices = scan_bluetooth_devices(scan_on=None)  # scan_on=None: nur Liste abfragen
+        return jsonify({'devices': devices})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/')
 def index():
     return render_template('index.html')

@@ -2,13 +2,18 @@ import subprocess
 import re
 
 def scan_bluetooth_devices(scan_on=True):
-    # scan_on=True: scan on, False: scan off
-    try:
-        mode = 'on' if scan_on else 'off'
-        subprocess.check_call(['bluetoothctl', 'scan', mode], timeout=3)
-    except Exception:
-        pass
-    # Danach bekannte Geräte listen
+    # scan_on=True: scan on, False: scan off, None: nur Liste abfragen
+    if scan_on is True:
+        try:
+            subprocess.check_call(['bluetoothctl', 'scan', 'on'], timeout=3)
+        except Exception:
+            pass
+    elif scan_on is False:
+        try:
+            subprocess.check_call(['bluetoothctl', 'scan', 'off'], timeout=3)
+        except Exception:
+            pass
+    # Geräte-Liste abfragen
     try:
         output = subprocess.check_output(['bluetoothctl', 'devices']).decode()
     except Exception:
