@@ -394,6 +394,48 @@ def api_led_control():
         write_register(PISUGAR_I2C_ADDR, 0xE0, rege0)
         return jsonify({'led_control': value})
 
+# Bluetooth: Gekoppelte Geräte auflisten
+@app.route('/api/bluetooth/paired', methods=['GET'])
+def api_bluetooth_paired():
+    try:
+        devices = list_paired_devices()
+        return jsonify({'devices': devices})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Bluetooth: Gerät koppeln
+@app.route('/api/bluetooth/pair', methods=['POST'])
+def api_bluetooth_pair():
+    data = request.get_json(force=True)
+    address = data.get('address')
+    if not address:
+        return jsonify({'error': 'No address provided'}), 400
+    success = pair_bluetooth_device(address)
+    if success:
+        return jsonify({'success': True})
+    else:
+        return jsonify({'success': False, 'error': 'Pairing failed'}), 500
+
+# Bluetooth: Gerät trennen
+@app.route('/api/bluetooth/disconnect', methods=['POST'])
+def api_bluetooth_disconnect():
+    import subprocess
+    data = request.get_json(force=True)
+    address = data.get('address')
+    if not address:
+        return jsonify({'error': 'No address provided'}), 400
+    try:
+        subprocess.check_call(['bluetoothctl', 'disconnect', address], timeout=10)
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+@app.route('/api/bluetooth/scan', methods=['GET'])
+def api_bluetooth_scan():
+    try:
+        devices = scan_bluetooth_devices()
+        return jsonify({'devices': devices})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/')
 def index():
