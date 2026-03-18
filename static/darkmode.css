@@ -168,11 +168,15 @@ button {
     color: #7ecfff;
     border: none;
     border-radius: 6px;
-    padding: 0.7rem 1.5rem;
+    padding: 0.7rem 1rem;
     font-size: 1rem;
     font-weight: 500;
     cursor: pointer;
     transition: background 0.2s, color 0.2s;
+    max-width: 120px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 button:hover {
     background: #7ecfff;
