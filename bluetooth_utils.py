@@ -1,18 +1,23 @@
 import subprocess
 import re
 
-def scan_bluetooth_devices():
-    # Returns a list of (address, name) tuples
+def scan_bluetooth_devices(scan_on=True):
+    # scan_on=True: scan on, False: scan off
     try:
-        output = subprocess.check_output(['bluetoothctl', 'scan', 'on'], timeout=5).decode()
+        mode = 'on' if scan_on else 'off'
+        subprocess.check_call(['bluetoothctl', 'scan', mode], timeout=3)
+    except Exception:
+        pass
+    # Danach bekannte Geräte listen
+    try:
+        output = subprocess.check_output(['bluetoothctl', 'devices']).decode()
     except Exception:
         output = ''
-    # Parse output for MAC addresses and names
     devices = set()
     for line in output.splitlines():
         m = re.search(r'Device ([0-9A-F:]{17}) (.+)', line)
         if m:
-            devices.add((m.group(1), m.group(2)))
+            devices.add({'address': m.group(1), 'name': m.group(2)})
     return list(devices)
 
 def pair_bluetooth_device(address):

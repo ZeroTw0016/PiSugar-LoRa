@@ -12,7 +12,7 @@
                 <div class="side-panel">
                     <div id="bluetooth-panel" style="margin-bottom:20px;">
                         <h3>Bluetooth Audio</h3>
-                        <button onclick="scanBluetoothDevices()">Geräte suchen</button>
+                        <button id="scan-btn" onclick="toggleScanBluetoothDevices()">Scan starten</button>
                         <div id="bluetooth-scan-results"></div>
                         <div id="bluetooth-paired-list"></div>
                         <div id="bluetooth-output-select"></div>
@@ -56,9 +56,16 @@
       <script>
 
                  // --- Bluetooth Panel ---
-                 async function scanBluetoothDevices() {
-                     document.getElementById('bluetooth-scan-results').innerText = 'Suche läuft...';
-                     const res = await fetch('/api/bluetooth/scan');
+                 let scanning = false;
+                 async function toggleScanBluetoothDevices() {
+                     scanning = !scanning;
+                     document.getElementById('scan-btn').innerText = scanning ? 'Scan stoppen' : 'Scan starten';
+                     document.getElementById('bluetooth-scan-results').innerText = scanning ? 'Suche läuft...' : '';
+                     const res = await fetch('/api/bluetooth/scan', {
+                         method: 'POST',
+                         headers: { 'Content-Type': 'application/json' },
+                         body: JSON.stringify({ scan_on: scanning })
+                     });
                      const data = await res.json();
                      let html = '';
                      if (data.devices && data.devices.length) {

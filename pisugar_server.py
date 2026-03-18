@@ -429,11 +429,13 @@ def api_bluetooth_disconnect():
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
-@app.route('/api/bluetooth/scan', methods=['GET'])
+@app.route('/api/bluetooth/scan', methods=['POST'])
 def api_bluetooth_scan():
+    data = request.get_json(force=True)
+    scan_on = data.get('scan_on', True)
     try:
-        devices = scan_bluetooth_devices()
-        return jsonify({'devices': devices})
+        devices = scan_bluetooth_devices(scan_on=scan_on)
+        return jsonify({'devices': devices, 'scanning': scan_on})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     
