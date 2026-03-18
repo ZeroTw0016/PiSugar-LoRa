@@ -52,7 +52,8 @@ def lora_send():
     data = request.get_json(force=True)
     msg = data.get('msg', '')
     import datetime
-    lora_hat.send(msg.encode('utf-8'))
+    msg_bytes = msg.encode('utf-8')[:240]  # Ensure max 240 bytes
+    lora_hat.send(msg_bytes)
     timestamp = datetime.datetime.now().isoformat(timespec='seconds')
     messages.append({'type': 'sent', 'msg': msg, 'timestamp': timestamp})
     if len(messages) > MAX_LORA_MSGS:
@@ -65,15 +66,19 @@ def lora_receive():
     import datetime
     r = lora_hat.receive()
     if r:
-        msg = r.decode('utf-8', errors='replace')
+        msg_bytes = r[:240]  # Only process up to 240 bytes
+        try:
+            msg = msg_bytes.decode('utf-8')
+        except UnicodeDecodeError:
+            msg = None
         timestamp = datetime.datetime.now().isoformat(timespec='seconds')
-        print(f"[LoRa] Empfangen (API): {msg}")
-        messages.append({'type': 'recv', 'msg': msg, 'timestamp': timestamp})
+        print(f"[LoRa] Empfangen (API): {msg if msg is not None else msg_bytes}")
+        messages.append({'type': 'recv', 'msg': msg if msg is not None else str(msg_bytes), 'timestamp': timestamp})
         if len(messages) > MAX_LORA_MSGS:
             messages[:] = messages[-MAX_LORA_MSGS:]
         save_lora_messages(messages)
-        return jsonify({'msg': msg, 'timestamp': timestamp})
-    return jsonify({'msg': None, 'timestamp': None})
+        return jsonify({'msg': msg if msg is not None else None, 'raw': list(msg_bytes), 'timestamp': timestamp})
+    return jsonify({'msg': None, 'raw': None, 'timestamp': None})
 
 @lora_api.route('/api/lora/messages', methods=['GET'])
 def lora_messages():
