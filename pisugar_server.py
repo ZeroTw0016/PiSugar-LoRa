@@ -396,4 +396,17 @@ def index():
     return render_template('index.html')
 
 if __name__ == '__main__':
+    import threading
+    import logging
+    def battery_background_task():
+        while True:
+            try:
+                status = get_status()
+                from time import time as _now
+                store.add_battery(status['battery_percent'], int(_now()*1000))
+            except Exception as e:
+                logging.warning(f"Battery background task error: {e}")
+            time.sleep(60)  # alle 60 Sekunden
+
+    threading.Thread(target=battery_background_task, daemon=True).start()
     app.run(host='0.0.0.0', port=5000)
