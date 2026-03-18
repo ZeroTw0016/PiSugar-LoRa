@@ -73,3 +73,14 @@ http://<raspberry-pi-ip>:5000
 - Die LoRa-Parameter (Frequenz, air_speed, etc.) können im Code angepasst werden.
 - Für pyserial muss das falsche Paket `serial` deinstalliert sein!
 - Die Weboberfläche zeigt Batterie-Status im Banner und LoRa-Nachrichten im Hauptbereich.
+
+## Text-to-Speech (TTS) und Bluetooth-Kopfhörer
+
+Für Sprachausgabe (pyttsx3) auf Bluetooth-Kopfhörern wird unter Linux das Systempaket **eSpeak-ng** benötigt:
+
+```
+sudo apt-get update
+sudo apt-get install espeak-ng
+```
+
+Bluetooth-Kopfhörer können über die Weboberfläche gekoppelt und als Audio-Ausgabe gewählt werden. Sobald ein Gerät verbunden ist, werden gesendete und empfangene Nachrichten automatisch vorgelesen.

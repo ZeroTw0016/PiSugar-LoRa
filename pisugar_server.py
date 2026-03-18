@@ -5,6 +5,7 @@ import smbus2
 import time
 # --- Bluetooth API ---
 from bluetooth_utils import scan_bluetooth_devices, pair_bluetooth_device, list_paired_devices
+from bluetooth_state import selected_bt_output
 
 # PiSugar 3 Standard I2C-Adresse
 PISUGAR_I2C_ADDR = 0x57
@@ -77,7 +78,8 @@ def get_status():
         'timing_boot_data': reg44,
         'custom_i2c_addr': reg50,
         'led_control': rege0 & 0x0F,
-        'write_protection': is_write_protection_on()
+        'write_protection': is_write_protection_on(),
+        'selected_bt_output': selected_bt_output
     }
 
 

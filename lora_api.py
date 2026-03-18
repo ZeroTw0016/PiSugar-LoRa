@@ -5,7 +5,7 @@ import json
 import os
 # --- TTS Integration für LoRa ---
 from tts_bluetooth import tts_speaker
-from pisugar_server import selected_bt_output
+from bluetooth_state import selected_bt_output
 
 # Frequenz persistent speichern
 LORA_FREQ_FILE = 'lora_freq.json'
