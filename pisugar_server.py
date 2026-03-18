@@ -3,8 +3,6 @@ from battery_store import store
 from lora_api import lora_api
 import smbus2
 import time
- # ...existing code...
-from bluetooth_state import selected_bt_output
 
 # PiSugar 3 Standard I2C-Adresse
 PISUGAR_I2C_ADDR = 0x57
