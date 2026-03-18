@@ -28,11 +28,13 @@ class WaveshareSX1262LoRaHAT:
         # Set address based on hostname: 0x94XX, where XX are the last two digits from the hostname
         custom_addr = 0x9401
         try:
-            # Extract last two digits from hostname (e.g., ZeroLora02 -> 02)
-            digits = ''.join(filter(str.isdigit, hostname))
-            if len(digits) >= 2:
-                xx = int(digits[-2:])
-                custom_addr = 0x9400 | xx
+            # Extract trailing digits from hostname (e.g., ZeroLora2 -> 2, ZeroLora12 -> 12)
+            import re
+            match = re.search(r'(\d+)$', hostname)
+            if match:
+                xx = int(match.group(1))
+                if 0 <= xx <= 255:
+                    custom_addr = 0x9400 | xx
         except Exception:
             pass
         self.addr = addr if addr is not None else custom_addr
