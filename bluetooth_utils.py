@@ -25,6 +25,9 @@ def scan_bluetooth_devices(scan_on=True, scan_seconds=5):
             line = proc.stdout.readline()
             if not line:
                 break
+            # Zeilen mit RSSI, TxPower oder Manufacturer überspringen
+            if any(x in line for x in ['RSSI', 'TxPower', 'Manufacturer']):
+                continue
             m = re.search(r'Device ([0-9A-F:]{17}) (.+)', line)
             if m:
                 found[m.group(1)] = m.group(2)
