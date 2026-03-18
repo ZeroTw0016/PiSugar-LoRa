@@ -3,8 +3,7 @@ from battery_store import store
 from lora_api import lora_api
 import smbus2
 import time
-# --- Bluetooth API ---
-from bluetooth_utils import scan_bluetooth_devices, pair_bluetooth_device, list_paired_devices
+ # ...existing code...
 from bluetooth_state import selected_bt_output
 
 # PiSugar 3 Standard I2C-Adresse

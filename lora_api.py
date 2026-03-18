@@ -4,8 +4,7 @@ import threading
 import json
 import os
 # --- TTS Integration für LoRa ---
-from tts_bluetooth import tts_speaker
-from bluetooth_state import selected_bt_output
+
 
 # Frequenz persistent speichern
 LORA_FREQ_FILE = 'lora_freq.json'
@@ -52,7 +51,6 @@ def lora_send():
     from flask import request
     data = request.get_json(force=True)
     msg = data.get('msg', '')
-    tts_say_if_bt(f'Gesendet: {msg}')
     import datetime
     lora_hat.send(msg.encode('utf-8'))
     timestamp = datetime.datetime.now().isoformat(timespec='seconds')
@@ -93,16 +91,14 @@ def lora_frequency():
         elif request.method == 'POST':
             data = request.get_json(force=True)
             freq = float(data.get('frequency', lora_hat.FREQ))
-            # Erlaube 868, 869.525, 960 und 915 MHz (960/915 nur Empfang)
-            allowed = [lora_hat.FREQ, getattr(lora_hat, 'GERMANY_FREQ', 869.525), getattr(lora_hat, 'AIRNAV_FREQ', 960), getattr(lora_hat, 'US_FREQ', 915)]
-            if freq in allowed:
+            # Only allow 868 MHz
+            if freq == lora_hat.FREQ:
                 lora_hat.set_frequency(freq)
                 save_lora_frequency(lora_hat.freq)
                 confirmed_freq = lora_hat.freq
-                listen_only = confirmed_freq in [getattr(lora_hat, 'AIRNAV_FREQ', 960), getattr(lora_hat, 'US_FREQ', 915)]
-                return jsonify({'frequency': confirmed_freq, 'status': 'ok', 'listen_only': listen_only})
+                return jsonify({'frequency': confirmed_freq, 'status': 'ok'})
             else:
-                return jsonify({'error': 'Frequency not allowed'}), 400
+                return jsonify({'error': 'Frequency not allowed. Only 868 MHz is supported.'}), 400
     return jsonify({'error': 'Not supported'}), 400
 
 @lora_api.route('/api/lora/test', methods=['POST'])
