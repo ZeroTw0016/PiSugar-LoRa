@@ -53,17 +53,14 @@ class WaveshareSX1262LoRaHAT:
 
     def set_frequency(self, freq_mhz):
         """
-        Set the frequency for receiving. Only 868 MHz is allowed for sending.
+        Set the frequency for both sending and receiving.
         960 MHz (AIRNAV_FREQ) ist nur für Empfang (listen only) erlaubt.
         """
         allowed = [self.FREQ, getattr(self, 'GERMANY_FREQ', 869.525), getattr(self, 'AIRNAV_FREQ', 960)]
         if freq_mhz not in allowed:
             raise ValueError(f"Frequency {freq_mhz} MHz not allowed.")
         self.freq = freq_mhz
-        if self.freq == self.AIRNAV_FREQ:
-            print(f"[LoRa] Frequency set to {self.freq} MHz (listen only, Airnavigation)")
-        else:
-            print(f"[LoRa] Frequency set to {self.freq} MHz (send only allowed on 868 MHz)")
+        print(f"[LoRa] Frequency set to {self.freq} MHz (send & receive)")
 
     def set_mode_normal(self):
         GPIO.output(self.M0, GPIO.LOW)

@@ -60,19 +60,20 @@
     display: flex;
     height: 95vh;
 }
+/* Responsive Anpassung für Handy */
 .side-panel {
-    width: 320px;
-    min-width: 180px;
+    width: 260px;
+    min-width: 120px;
     background: #222;
     color: #fff;
-    padding: 1em;
+    padding: 0.5em;
     overflow-y: auto;
 }
 .main-panel {
     flex: 1;
     background: #181818;
     color: #fff;
-    padding: 1em;
+    padding: 0.5em;
     overflow-y: auto;
 }
 #lora-messages {
