@@ -56,22 +56,18 @@
             document.getElementById('lora-test-btn').disabled = false;
         }
          
-        let lastBatteryUpdate = 0;
+        // Only one autoRefresh and window.onload
         function autoRefresh() {
             refreshStatus();
             loadLoraMessages();
-            const now = Date.now();
-            if (now - lastBatteryUpdate > 30000 || lastBatteryUpdate === 0) {
-                fetch('/api/battery_history').then(r=>r.json()).then(hist=>{ batteryHistory = hist; updateBatteryGraph(); updateEstimate(); updateBatteryPercentLabel(); });
-                lastBatteryUpdate = now;
-            }
+            fetch('/api/battery_history').then(r=>r.json()).then(hist=>{ batteryHistory = hist; updateBatteryGraph(); updateEstimate(); updateBatteryPercentLabel(); });
+            fetch('/api/shutdown_history').then(r=>r.json()).then(hist=>{ shutdownHistory = hist; updateShutdownHistory(); });
             setTimeout(autoRefresh, 5000);
         }
-         
+
         window.onload = function() {
-            fetch('/api/shutdown_history').then(r=>r.json()).then(hist=>{ shutdownHistory = hist; updateShutdownHistory(); });
             loadLoraAddress();
-            loadLoraFrequency();
+            loadLoraFrequency && loadLoraFrequency();
             autoRefresh();
         }
         function updateBatteryPercentLabel() {
@@ -219,7 +215,8 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ enabled: !(await (await fetch('/api/write_protection')).json()).write_protection })
             });
-            refreshStatus();
+            // Always refresh all info after toggling
+            autoRefresh();
         }
         async function loadLoraMessages() {
             const res = await fetch('/api/lora/messages');
@@ -243,17 +240,7 @@
             document.getElementById('lora-msg').value = '';
             await loadLoraMessages();
         }
-        function autoRefresh() {
-            refreshStatus();
-            loadLoraMessages();
-            // Lade persistente Daten
-            fetch('/api/battery_history').then(r=>r.json()).then(hist=>{ batteryHistory = hist; updateBatteryGraph(); updateEstimate(); updateBatteryPercentLabel(); });
-            fetch('/api/shutdown_history').then(r=>r.json()).then(hist=>{ shutdownHistory = hist; updateShutdownHistory(); });
-            setTimeout(autoRefresh, 2000);
-        }
-        window.onload = function() {
-            autoRefresh();
-        }
+        // ...existing code...
       </script>
    </body>
 </html>
