@@ -76,14 +76,30 @@
                      }
                  }
 
+                 // Merke gefundene Geräte persistent bis DEL
+                 let foundDevices = {};
                  async function loadFoundBluetoothDevices() {
                      const res = await fetch('/api/bluetooth/found');
                      const data = await res.json();
-                     let html = '';
+                     // Füge neue Geräte hinzu
                      if (data.devices && data.devices.length) {
-                         html += '<ul>';
                          for (const d of data.devices) {
-                             html += `<li>${d.name} (${d.address}) <button onclick="pairBluetoothDevice('${d.address}')">Pair</button></li>`;
+                             foundDevices[d.address] = d.name;
+                         }
+                     }
+                     // Entferne Geräte, die ein DEL im Namen haben
+                     for (const addr in foundDevices) {
+                         if (foundDevices[addr] && foundDevices[addr].startsWith('DEL ')) {
+                             delete foundDevices[addr];
+                         }
+                     }
+                     // Anzeige
+                     let html = '';
+                     const entries = Object.entries(foundDevices);
+                     if (entries.length) {
+                         html += '<ul>';
+                         for (const [addr, name] of entries) {
+                             html += `<li>${name} (${addr}) <button onclick="pairBluetoothDevice('${addr}')">Pair</button></li>`;
                          }
                          html += '</ul>';
                      } else {

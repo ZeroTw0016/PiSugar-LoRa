@@ -434,7 +434,11 @@ def api_bluetooth_scan():
     data = request.get_json(force=True)
     scan_on = data.get('scan_on', True)
     try:
-        devices = scan_bluetooth_devices(scan_on=scan_on)
+        if scan_on:
+            devices = scan_bluetooth_devices(scan_on=True)
+        else:
+            scan_bluetooth_devices(scan_on=False)  # Stoppe Scan
+            devices = []
         return jsonify({'devices': devices, 'scanning': scan_on})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
