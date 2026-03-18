@@ -2,3 +2,5 @@ flask
 smbus2
 pyserial
 RPi.GPIO
+pyttsx3
+pyaudio

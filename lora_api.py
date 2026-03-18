@@ -3,6 +3,9 @@ from waveshare_lora_hat import WaveshareSX1262LoRaHAT
 import threading
 import json
 import os
+# --- TTS Integration für LoRa ---
+from tts_bluetooth import tts_speaker
+from pisugar_server import selected_bt_output
 
 # Frequenz persistent speichern
 LORA_FREQ_FILE = 'lora_freq.json'
@@ -49,6 +52,7 @@ def lora_send():
     from flask import request
     data = request.get_json(force=True)
     msg = data.get('msg', '')
+    tts_say_if_bt(f'Gesendet: {msg}')
     import datetime
     lora_hat.send(msg.encode('utf-8'))
     timestamp = datetime.datetime.now().isoformat(timespec='seconds')
@@ -131,7 +135,7 @@ def lora_receive_background():
             if len(messages) > MAX_LORA_MSGS:
                 messages[:] = messages[-MAX_LORA_MSGS:]
             save_lora_messages(messages)
-            # Automatisches Reply auf Testnachrichten mit Prefix
+            tts_say_if_bt(f'Empfangen: {msg}')
             if msg.startswith(PREFIX) and str(lora_hat.addr) not in msg:
                 # Antworte mit gleichem Inhalt zurück
                 print(f"[LoRa] Reply to test: {msg}")

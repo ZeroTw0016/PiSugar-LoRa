@@ -7,8 +7,16 @@
       <link rel="stylesheet" href="static/darkmode.css">
    </head>
    <body>
-      <div id="battery-banner"></div>
-      <div class="main-layout">
+            <div id="battery-banner"></div>
+            <div class="main-layout">
+                <div class="side-panel">
+                    <div id="bluetooth-panel" style="margin-bottom:20px;">
+                        <h3>Bluetooth Audio</h3>
+                        <button onclick="scanBluetoothDevices()">Geräte suchen</button>
+                        <div id="bluetooth-scan-results"></div>
+                        <div id="bluetooth-paired-list"></div>
+                        <div id="bluetooth-output-select"></div>
+                    </div>
          <!-- Seitenpanel: System-Infos -->
             <div class="side-panel">
                 <div id="lora-settings-panel" style="margin-bottom:20px;">
@@ -47,7 +55,65 @@
       </div>
       <script>
 
-         async function loadLoraFrequency() {
+                 // --- Bluetooth Panel ---
+                 async function scanBluetoothDevices() {
+                     document.getElementById('bluetooth-scan-results').innerText = 'Suche läuft...';
+                     const res = await fetch('/api/bluetooth/scan');
+                     const data = await res.json();
+                     let html = '';
+                     if (data.devices && data.devices.length) {
+                         html += '<ul>';
+                         for (const d of data.devices) {
+                             html += `<li>${d.name} (${d.address}) <button onclick="pairBluetoothDevice('${d.address}')">Pair</button></li>`;
+                         }
+                         html += '</ul>';
+                     } else {
+                         html = 'Keine Geräte gefunden.';
+                     }
+                     document.getElementById('bluetooth-scan-results').innerHTML = html;
+                 }
+                 async function pairBluetoothDevice(address) {
+                     const res = await fetch('/api/bluetooth/pair', {
+                         method: 'POST',
+                         headers: { 'Content-Type': 'application/json' },
+                         body: JSON.stringify({ address })
+                     });
+                     const data = await res.json();
+                     alert(data.success ? 'Gekoppelt!' : 'Fehler beim Koppeln.');
+                     loadPairedBluetoothDevices();
+                 }
+                 async function loadPairedBluetoothDevices() {
+                     const res = await fetch('/api/bluetooth/paired');
+                     const data = await res.json();
+                     let html = '';
+                     if (data.devices && data.devices.length) {
+                         html += '<b>Gekoppelte Geräte:</b><ul>';
+                         for (const d of data.devices) {
+                             html += `<li>${d.name} (${d.address}) <button onclick="selectBluetoothOutput('${d.address}')">Als Audio-Ausgabe wählen</button></li>`;
+                         }
+                         html += '</ul>';
+                     } else {
+                         html = 'Keine gekoppelten Geräte.';
+                     }
+                     document.getElementById('bluetooth-paired-list').innerHTML = html;
+                 }
+                 async function selectBluetoothOutput(address) {
+                     const res = await fetch('/api/bluetooth/output', {
+                         method: 'POST',
+                         headers: { 'Content-Type': 'application/json' },
+                         body: JSON.stringify({ address })
+                     });
+                     const data = await res.json();
+                     alert(data.success ? 'Audio-Ausgabe gesetzt!' : 'Fehler beim Setzen der Audio-Ausgabe.');
+                     document.getElementById('bluetooth-output-select').innerText = data.success ? `Aktuelle Audio-Ausgabe: ${address}` : '';
+                 }
+                 // Initialisiere Bluetooth-Panel beim Laden
+                 window.addEventListener('DOMContentLoaded', () => {
+                     loadPairedBluetoothDevices();
+                 });
+
+                 // --- LoRa ---
+                 async function loadLoraFrequency() {
             const res = await fetch('/api/lora/frequency');
             const data = await res.json();
             let freq = data.frequency;
