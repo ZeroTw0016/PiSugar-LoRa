@@ -66,10 +66,11 @@
         }
 
         window.onload = function() {
+            autoRefresh();
             loadLoraAddress();
             loadLoraFrequency && loadLoraFrequency();
-            autoRefresh();
         }
+        
         function updateBatteryPercentLabel() {
             if (!batteryHistory.length) return;
             const label = document.getElementById('battery-percent-label');

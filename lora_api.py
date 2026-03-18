@@ -53,9 +53,11 @@ def lora_send():
     msg = data.get('msg', '')
     import datetime
     msg_bytes = msg.encode('utf-8')[:240]  # Ensure max 240 bytes
+    print(f"[LoRa] Sende Nachricht: {msg}")
     lora_hat.send(msg_bytes)
     timestamp = datetime.datetime.now().isoformat(timespec='seconds')
     messages.append({'type': 'sent', 'msg': msg, 'timestamp': timestamp})
+    print(f"[LoRa] Nachricht gespeichert: {msg}")
     if len(messages) > MAX_LORA_MSGS:
         messages[:] = messages[-MAX_LORA_MSGS:]
     save_lora_messages(messages)
@@ -74,10 +76,12 @@ def lora_receive():
         timestamp = datetime.datetime.now().isoformat(timespec='seconds')
         print(f"[LoRa] Empfangen (API): {msg if msg is not None else msg_bytes}")
         messages.append({'type': 'recv', 'msg': msg if msg is not None else str(msg_bytes), 'timestamp': timestamp})
+        print(f"[LoRa] Empfang gespeichert: {msg if msg is not None else msg_bytes}")
         if len(messages) > MAX_LORA_MSGS:
             messages[:] = messages[-MAX_LORA_MSGS:]
         save_lora_messages(messages)
         return jsonify({'msg': msg if msg is not None else None, 'raw': list(msg_bytes), 'timestamp': timestamp})
+    print("[LoRa] Kein Empfang (API)")
     return jsonify({'msg': None, 'raw': None, 'timestamp': None})
 
 @lora_api.route('/api/lora/messages', methods=['GET'])
@@ -126,6 +130,7 @@ def lora_test():
 def lora_receive_background():
     import datetime
     PREFIX = "LORATEST_"
+    print("[LoRa] Starte Hintergrund-Empfangsthread")
     while True:
         r = lora_hat.receive()
         if r:
@@ -133,6 +138,7 @@ def lora_receive_background():
             timestamp = datetime.datetime.now().isoformat(timespec='seconds')
             print(f"[LoRa] Empfangen (Background): {msg}")
             messages.append({'type': 'recv', 'msg': msg, 'timestamp': timestamp})
+            print(f"[LoRa] Empfang gespeichert (Background): {msg}")
             if len(messages) > MAX_LORA_MSGS:
                 messages[:] = messages[-MAX_LORA_MSGS:]
             save_lora_messages(messages)
