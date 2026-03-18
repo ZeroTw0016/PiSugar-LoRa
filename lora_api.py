@@ -131,7 +131,6 @@ def lora_receive_background():
             if len(messages) > MAX_LORA_MSGS:
                 messages[:] = messages[-MAX_LORA_MSGS:]
             save_lora_messages(messages)
-            tts_say_if_bt(f'Empfangen: {msg}')
             if msg.startswith(PREFIX) and str(lora_hat.addr) not in msg:
                 # Antworte mit gleichem Inhalt zurück
                 print(f"[LoRa] Reply to test: {msg}")
