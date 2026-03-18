@@ -4,7 +4,25 @@ import threading
 import json
 import os
 
-lora_hat = WaveshareSX1262LoRaHAT()
+# Frequenz persistent speichern
+LORA_FREQ_FILE = 'lora_freq.json'
+def load_lora_frequency():
+    if os.path.exists(LORA_FREQ_FILE):
+        try:
+            with open(LORA_FREQ_FILE, 'r') as f:
+                return float(json.load(f))
+        except Exception:
+            return None
+    return None
+def save_lora_frequency(freq):
+    try:
+        with open(LORA_FREQ_FILE, 'w') as f:
+            json.dump(freq, f)
+    except Exception:
+        pass
+
+saved_freq = load_lora_frequency()
+lora_hat = WaveshareSX1262LoRaHAT(freq=saved_freq if saved_freq else None)
 lora_api = Blueprint('lora_api', __name__)
 
 # Shared message buffer
@@ -75,8 +93,11 @@ def lora_frequency():
             allowed = [lora_hat.FREQ, getattr(lora_hat, 'GERMANY_FREQ', 869.525), getattr(lora_hat, 'AIRNAV_FREQ', 960)]
             if freq in allowed:
                 lora_hat.set_frequency(freq)
-                listen_only = (freq == getattr(lora_hat, 'AIRNAV_FREQ', 960))
-                return jsonify({'frequency': lora_hat.freq, 'status': 'ok', 'listen_only': listen_only})
+                save_lora_frequency(lora_hat.freq)
+                # Bestätigung: Rücklesen
+                confirmed_freq = lora_hat.freq
+                listen_only = (confirmed_freq == getattr(lora_hat, 'AIRNAV_FREQ', 960))
+                return jsonify({'frequency': confirmed_freq, 'status': 'ok', 'listen_only': listen_only})
             else:
                 return jsonify({'error': 'Frequency not allowed'}), 400
     return jsonify({'error': 'Not supported'}), 400
