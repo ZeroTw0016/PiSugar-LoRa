@@ -1,7 +1,9 @@
 import subprocess
 import re
+import time
+import threading
 
-def scan_bluetooth_devices(scan_on=True):
+def scan_bluetooth_devices(scan_on=True, scan_seconds=5):
     # scan_on=True: scan on, False: scan off, None: nur Liste abfragen
     if scan_on is True:
         try:
@@ -13,17 +15,26 @@ def scan_bluetooth_devices(scan_on=True):
             subprocess.check_call(['bluetoothctl', 'scan', 'off'], timeout=3)
         except Exception:
             pass
-    # Geräte-Liste abfragen
+        return []
+    # scan_on=None: nur bekannte Geräte
+    proc = subprocess.Popen(['bluetoothctl', 'scan', 'on'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    found = {}
+    start = time.time()
     try:
-        output = subprocess.check_output(['bluetoothctl', 'devices']).decode()
-    except Exception:
-        output = ''
-    devices = set()
-    for line in output.splitlines():
-        m = re.search(r'Device ([0-9A-F:]{17}) (.+)', line)
-        if m:
-            devices.add({'address': m.group(1), 'name': m.group(2)})
-    return list(devices)
+        while time.time() - start < scan_seconds:
+            line = proc.stdout.readline()
+            if not line:
+                break
+            m = re.search(r'Device ([0-9A-F:]{17}) (.+)', line)
+            if m:
+                found[m.group(1)] = m.group(2)
+    finally:
+        proc.terminate()
+        try:
+            subprocess.check_call(['bluetoothctl', 'scan', 'off'], timeout=2)
+        except Exception:
+            pass
+    return [{'address': addr, 'name': name} for addr, name in found.items()]
 
 def pair_bluetooth_device(address):
     try:

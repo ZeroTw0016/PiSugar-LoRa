@@ -455,7 +455,7 @@ def api_bluetooth_output():
 def api_bluetooth_found():
     try:
         from bluetooth_utils import scan_bluetooth_devices
-        devices = scan_bluetooth_devices(scan_on=None)  # scan_on=None: nur Liste abfragen
+        devices = scan_bluetooth_devices(scan_on=True, scan_seconds=60)
         return jsonify({'devices': devices})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
