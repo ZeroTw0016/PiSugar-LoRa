@@ -71,11 +71,12 @@ def lora_frequency():
         elif request.method == 'POST':
             data = request.get_json(force=True)
             freq = float(data.get('frequency', lora_hat.FREQ))
-            # Only allow switching to 868 or Germany frequency for receive
-            allowed = [lora_hat.FREQ, getattr(lora_hat, 'GERMANY_FREQ', 869.525)]
+            # Erlaube 868, 869.525 und 960 MHz (960 nur Empfang)
+            allowed = [lora_hat.FREQ, getattr(lora_hat, 'GERMANY_FREQ', 869.525), getattr(lora_hat, 'AIRNAV_FREQ', 960)]
             if freq in allowed:
                 lora_hat.set_frequency(freq)
-                return jsonify({'frequency': lora_hat.freq, 'status': 'ok'})
+                listen_only = (freq == getattr(lora_hat, 'AIRNAV_FREQ', 960))
+                return jsonify({'frequency': lora_hat.freq, 'status': 'ok', 'listen_only': listen_only})
             else:
                 return jsonify({'error': 'Frequency not allowed'}), 400
     return jsonify({'error': 'Not supported'}), 400

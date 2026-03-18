@@ -22,6 +22,7 @@ class WaveshareSX1262LoRaHAT:
     UART_BAUDRATE = 9600
     FREQ = 868  # Default frequency (MHz)
     GERMANY_FREQ = 869.525  # Example Germany frequency (MHz)
+    AIRNAV_FREQ = 960  # Listen-only frequency for Airnavigation (MHz)
 
     def __init__(self, addr=None, power=22, rssi=False, air_speed=2400, net_id=0, buffer_size=240, crypt=0, freq=None):
         hostname = socket.gethostname()
@@ -53,11 +54,16 @@ class WaveshareSX1262LoRaHAT:
     def set_frequency(self, freq_mhz):
         """
         Set the frequency for receiving. Only 868 MHz is allowed for sending.
+        960 MHz (AIRNAV_FREQ) ist nur für Empfang (listen only) erlaubt.
         """
+        allowed = [self.FREQ, getattr(self, 'GERMANY_FREQ', 869.525), getattr(self, 'AIRNAV_FREQ', 960)]
+        if freq_mhz not in allowed:
+            raise ValueError(f"Frequency {freq_mhz} MHz not allowed.")
         self.freq = freq_mhz
-        # If hardware supports dynamic frequency, set it here
-        # (Add hardware-specific code if needed)
-        print(f"[LoRa] Frequency set to {self.freq} MHz (send only allowed on 868 MHz)")
+        if self.freq == self.AIRNAV_FREQ:
+            print(f"[LoRa] Frequency set to {self.freq} MHz (listen only, Airnavigation)")
+        else:
+            print(f"[LoRa] Frequency set to {self.freq} MHz (send only allowed on 868 MHz)")
 
     def set_mode_normal(self):
         GPIO.output(self.M0, GPIO.LOW)
