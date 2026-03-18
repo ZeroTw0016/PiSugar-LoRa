@@ -23,8 +23,7 @@ def save_lora_frequency(freq):
     except Exception:
         pass
 
-saved_freq = load_lora_frequency()
-lora_hat = WaveshareSX1262LoRaHAT(freq=saved_freq if saved_freq else None)
+lora_hat = WaveshareSX1262LoRaHAT(net_id=4, freq=868)
 lora_api = Blueprint('lora_api', __name__)
 
 # Shared message buffer
