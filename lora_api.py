@@ -63,6 +63,7 @@ def lora_messages():
 def lora_address():
     return jsonify({'address': lora_hat.addr})
 
+@lora_api.route('/api/lora/frequency', methods=['GET', 'POST'])
 def lora_frequency():
     if hasattr(lora_hat, 'freq'):
         if request.method == 'GET':
