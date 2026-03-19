@@ -5,24 +5,6 @@ import json
 import os
 # --- TTS Integration für LoRa ---
 
-
-# Frequenz persistent speichern
-LORA_FREQ_FILE = 'lora_freq.json'
-def load_lora_frequency():
-    if os.path.exists(LORA_FREQ_FILE):
-        try:
-            with open(LORA_FREQ_FILE, 'r') as f:
-                return float(json.load(f))
-        except Exception:
-            return None
-    return None
-def save_lora_frequency(freq):
-    try:
-        with open(LORA_FREQ_FILE, 'w') as f:
-            json.dump(freq, f)
-    except Exception:
-        pass
-
 lora_hat = WaveshareSX1262LoRaHAT(net_id=4, freq=868)
 lora_api = Blueprint('lora_api', __name__)
 
