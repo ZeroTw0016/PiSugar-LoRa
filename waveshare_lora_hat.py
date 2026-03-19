@@ -85,8 +85,8 @@ class WaveshareSX1262LoRaHAT:
             print(f"[LoRa] SEND BLOCKED: Sending is only allowed on 868 MHz, current frequency is {self.freq} MHz.")
             raise RuntimeError(f"Sending is only allowed on 868 MHz!")
         self.set_mode_normal()
-        # Use simple ASCII framing markers
-        framed = '[' + data + ']'
+        # Use 'ZeroStart' and 'ZeroEnd' as framing markers
+        framed = 'ZeroStart_' + data + '_ZeroEnd'
         print("Sending framed:", framed)
         self.ser.write(framed.encode('utf-8'))
         self.ser.flush()
@@ -103,13 +103,21 @@ class WaveshareSX1262LoRaHAT:
                 r_str = ''
             print("Empfangen (raw):", r_buff)
             print("Empfangen (str):", r_str)
-            # Look for framed message
-            start = r_str.find('[')
-            end = r_str.find(']', start)
-            if start != -1 and end != -1 and end > start:
-                msg = r_str[start+1:end]
-                print("Framed message:", msg)
-                return msg
+            # Look for all messages framed by 'ZeroStart_' and '_ZeroEnd'
+            msgs = []
+            start = 0
+            while True:
+                s_idx = r_str.find('ZeroStart_', start)
+                e_idx = r_str.find('_ZeroEnd', s_idx + 10)
+                if s_idx != -1 and e_idx != -1:
+                    msg = r_str[s_idx + 10:e_idx]
+                    msgs.append(msg)
+                    start = e_idx + 8
+                else:
+                    break
+            if msgs:
+                print("Framed message(s):", msgs)
+                return msgs[0] if len(msgs) == 1 else msgs
             else:
                 print("No valid frame found.")
                 return r_str  # Return raw string for debugging
