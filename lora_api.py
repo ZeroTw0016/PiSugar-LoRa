@@ -49,19 +49,21 @@ def lora_receive():
     import datetime
     r = lora_hat.receive()
     if r:
-        msg_bytes = r[:240]  # Only process up to 240 bytes
-        try:
-            msg = msg_bytes.decode('utf-8')
-        except UnicodeDecodeError:
-            msg = None
+        # r is now a string, may contain multiple messages like 'msg1][msg2'
+        msgs = []
+        for part in r.split(']['):
+            part = part.strip('[]')
+            if part:
+                msgs.append(part)
         timestamp = datetime.datetime.now().isoformat(timespec='seconds')
-        print(f"[LoRa] Empfangen (API): {msg if msg is not None else msg_bytes}")
-        messages.append({'type': 'recv', 'msg': msg if msg is not None else str(msg_bytes), 'timestamp': timestamp})
-        print(f"[LoRa] Empfang gespeichert: {msg if msg is not None else msg_bytes}")
+        for msg in msgs:
+            print(f"[LoRa] Empfangen (API): {msg}")
+            messages.append({'type': 'recv', 'msg': msg, 'timestamp': timestamp})
+            print(f"[LoRa] Empfang gespeichert: {msg}")
         if len(messages) > MAX_LORA_MSGS:
             messages[:] = messages[-MAX_LORA_MSGS:]
         save_lora_messages(messages)
-        return jsonify({'msg': msg if msg is not None else None, 'raw': list(msg_bytes), 'timestamp': timestamp})
+        return jsonify({'msg': msgs[0] if msgs else None, 'raw': r, 'timestamp': timestamp})
     print("[LoRa] Kein Empfang (API)")
     return jsonify({'msg': None, 'raw': None, 'timestamp': None})
 
@@ -102,11 +104,11 @@ def lora_test():
     import time
     time.sleep(1)
     received = lora_hat.receive()
-    if received and test_msg in received.decode('utf-8', errors='replace'):
+    if received and test_msg in received:
         result = 'OK'
     else:
         result = 'FAILED'
-    return jsonify({'test_sent': test_msg, 'result': result, 'received': received.decode('utf-8', errors='replace') if received else None})
+    return jsonify({'test_sent': test_msg, 'result': result, 'received': received if received else None})
 
 def lora_receive_background():
     import datetime
@@ -115,18 +117,24 @@ def lora_receive_background():
     while True:
         r = lora_hat.receive()
         if r:
-            msg = r.decode('utf-8', errors='replace')
+            # r is now a string, may contain multiple messages like 'msg1][msg2'
+            msgs = []
+            for part in r.split(']['):
+                part = part.strip('[]')
+                if part:
+                    msgs.append(part)
             timestamp = datetime.datetime.now().isoformat(timespec='seconds')
-            print(f"[LoRa] Empfangen (Background): {msg}")
-            messages.append({'type': 'recv', 'msg': msg, 'timestamp': timestamp})
-            print(f"[LoRa] Empfang gespeichert (Background): {msg}")
-            if len(messages) > MAX_LORA_MSGS:
-                messages[:] = messages[-MAX_LORA_MSGS:]
-            save_lora_messages(messages)
-            if msg.startswith(PREFIX) and str(lora_hat.addr) not in msg:
-                # Antworte mit gleichem Inhalt zurück
-                print(f"[LoRa] Reply to test: {msg}")
-                lora_hat.send(msg.encode('utf-8'))
+            for msg in msgs:
+                print(f"[LoRa] Empfangen (Background): {msg}")
+                messages.append({'type': 'recv', 'msg': msg, 'timestamp': timestamp})
+                print(f"[LoRa] Empfang gespeichert (Background): {msg}")
+                if len(messages) > MAX_LORA_MSGS:
+                    messages[:] = messages[-MAX_LORA_MSGS:]
+                save_lora_messages(messages)
+                if msg.startswith(PREFIX) and str(lora_hat.addr) not in msg:
+                    # Antworte mit gleichem Inhalt zurück
+                    print(f"[LoRa] Reply to test: {msg}")
+                    lora_hat.send(msg)
         import time
         time.sleep(1)
 
