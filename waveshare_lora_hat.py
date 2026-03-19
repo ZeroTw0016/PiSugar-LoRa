@@ -85,7 +85,10 @@ class WaveshareSX1262LoRaHAT:
             print(f"[LoRa] SEND BLOCKED: Sending is only allowed on 868 MHz, current frequency is {self.freq} MHz.")
             raise RuntimeError(f"Sending is only allowed on 868 MHz!")
         self.set_mode_normal()
-        self.ser.write(data)
+        # Add framing markers for robust communication
+        framed = b'<START>' + data + b'<END>'
+        self.ser.write(framed)
+        self.ser.flush()
         time.sleep(0.1)
 
     def receive(self):
@@ -94,7 +97,16 @@ class WaveshareSX1262LoRaHAT:
             time.sleep(0.5)
             r_buff = self.ser.read(self.ser.inWaiting())
             print("Empfangen: ", r_buff)
-            return r_buff
+            # Look for framed message
+            start = r_buff.find(b'<START>')
+            end = r_buff.find(b'<END>', start)
+            if start != -1 and end != -1 and end > start:
+                msg = r_buff[start+7:end]
+                print("Framed message: ", msg)
+                return msg
+            else:
+                print("No valid frame found.")
+                return r_buff  # Return raw for debugging
         return None
 
     def get_settings(self):
