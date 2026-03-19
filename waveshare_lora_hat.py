@@ -79,15 +79,16 @@ class WaveshareSX1262LoRaHAT:
         GPIO.output(self.M1, GPIO.HIGH)
         time.sleep(0.1)
 
-    def send(self, data: bytes):
+    def send(self, data: str):
         # Senden nur auf 868 erlaubt
         if self.freq != self.FREQ:
             print(f"[LoRa] SEND BLOCKED: Sending is only allowed on 868 MHz, current frequency is {self.freq} MHz.")
             raise RuntimeError(f"Sending is only allowed on 868 MHz!")
         self.set_mode_normal()
-        # Add framing markers for robust communication
-        framed = b'<START>' + data + b'<END>'
-        self.ser.write(framed)
+        # Use simple ASCII framing markers
+        framed = '[' + data + ']'
+        print("Sending framed:", framed)
+        self.ser.write(framed.encode('utf-8'))
         self.ser.flush()
         time.sleep(0.1)
 
@@ -96,17 +97,22 @@ class WaveshareSX1262LoRaHAT:
         if self.ser.inWaiting() > 0:
             time.sleep(0.5)
             r_buff = self.ser.read(self.ser.inWaiting())
-            print("Empfangen: ", r_buff)
+            try:
+                r_str = r_buff.decode('utf-8', errors='replace')
+            except Exception:
+                r_str = ''
+            print("Empfangen (raw):", r_buff)
+            print("Empfangen (str):", r_str)
             # Look for framed message
-            start = r_buff.find(b'<START>')
-            end = r_buff.find(b'<END>', start)
+            start = r_str.find('[')
+            end = r_str.find(']', start)
             if start != -1 and end != -1 and end > start:
-                msg = r_buff[start+7:end]
-                print("Framed message: ", msg)
+                msg = r_str[start+1:end]
+                print("Framed message:", msg)
                 return msg
             else:
                 print("No valid frame found.")
-                return r_buff  # Return raw for debugging
+                return r_str  # Return raw string for debugging
         return None
 
     def get_settings(self):
