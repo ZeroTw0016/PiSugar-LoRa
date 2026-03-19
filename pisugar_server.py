@@ -89,6 +89,8 @@ def api_status():
         store.add_battery(status['battery_percent'], int(_now()*1000))
         return jsonify(status)
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 # API für Batterie-Historie
 @app.route('/api/battery_history', methods=['GET'])
