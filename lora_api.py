@@ -33,9 +33,9 @@ def lora_send():
     data = request.get_json(force=True)
     msg = data.get('msg', '')
     import datetime
-    msg_bytes = msg.encode('utf-8')[:240]  # Ensure max 240 bytes
-    print(f"[LoRa] Sende Nachricht: {msg}")
-    lora_hat.send(msg_bytes)
+    msg_str = msg[:240]  # Ensure max 240 characters
+    print(f"[LoRa] Sende Nachricht: {msg_str}")
+    lora_hat.send(msg_str)
     timestamp = datetime.datetime.now().isoformat(timespec='seconds')
     messages.append({'type': 'sent', 'msg': msg, 'timestamp': timestamp})
     print(f"[LoRa] Nachricht gespeichert: {msg}")
@@ -97,7 +97,7 @@ def lora_test():
     import datetime
     PREFIX = "LORATEST_"
     test_msg = f"{PREFIX}{lora_hat.addr}_{datetime.datetime.now().strftime('%H%M%S')}"
-    lora_hat.send(test_msg.encode('utf-8'))
+    lora_hat.send(test_msg)
     # Warte kurz und versuche zu empfangen
     import time
     time.sleep(1)
